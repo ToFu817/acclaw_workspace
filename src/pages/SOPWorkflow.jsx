@@ -53,8 +53,8 @@ export default function SOPWorkflow() {
       toast.error('請選擇 SOP 和客戶');
       return;
     }
-    const sop = data.find((s) => s.sopId === applyForm.sopId);
-    const client = clients.find((c) => c.clientId === applyForm.clientId);
+    const sop = data.find((s) => String(s.sopId).trim() === String(applyForm.sopId).trim());
+    const client = clients.find((c) => String(c.clientId).trim() === String(applyForm.clientId).trim());
     if (!sop || !client) { toast.error('資料不完整'); return; }
 
     // Create a single task with all SOP steps embedded

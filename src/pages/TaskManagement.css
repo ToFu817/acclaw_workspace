@@ -31,3 +31,64 @@
   display: flex;
   gap: var(--space-sm);
 }
+
+.sop-progress-mini {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.sop-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.sop-progress-fill {
+  height: 100%;
+  background: var(--color-sage);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.sop-progress-text {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sop-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sop-tracker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #f9f9f9;
+  transition: background 0.2s;
+}
+
+.sop-tracker-item:hover {
+  background: #f0f0f0;
+}
+
+.sop-tracker-item.done {
+  background: #e6fffa;
+}
+
+.sop-tracker-item.done .sop-tracker-label {
+  text-decoration: line-through;
+  color: #999;
+}

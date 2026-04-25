@@ -55,6 +55,7 @@ export default function TaskManagement() {
   const [editingTask, setEditingTask] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [sopModal, setSopModal] = useState({ isOpen: false, task: null });
   const [importOpen, setImportOpen] = useState(false);
   const [clickingIds, setClickingIds] = useState(new Set());
 
@@ -216,6 +217,31 @@ export default function TaskManagement() {
     }
   };
 
+  const handleToggleSopStep = async (task, stepIndex) => {
+    const steps = (task.sopSteps || '').split(',').map(s => s.trim());
+    const currentSteps = steps.map((s, idx) => {
+      if (idx === stepIndex) {
+        return s.includes('[done]') ? s.replace('[done]', '') : `${s}[done]`;
+      }
+      return s;
+    });
+
+    const newSopSteps = currentSteps.join(', ');
+    const doneCount = currentSteps.filter(s => s.includes('[done]')).length;
+    const isAllDone = doneCount === currentSteps.length;
+
+    const result = await update(SHEET_NAMES.TASKS, task.rowIndex, {
+      ...task,
+      sopSteps: newSopSteps
+    });
+
+    if (result.success) {
+      if (isAllDone) toast.success('所有 SOP 步驟已完成！');
+      refetch();
+      setSopModal(prev => ({ ...prev, task: { ...task, sopSteps: newSopSteps } }));
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     const result = await remove(SHEET_NAMES.TASKS, deleteTarget.rowIndex);
@@ -227,7 +253,32 @@ export default function TaskManagement() {
   };
 
   const columns = [
-    { key: 'taskItem', label: '任務項目', minWidth: '150px' },
+    {
+      key: 'taskItem',
+      label: '任務項目',
+      minWidth: '150px',
+      render: (v, row) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span style={{ fontWeight: 600 }}>{v}</span>
+          {row.sopSteps && (
+            <div 
+              className="sop-progress-mini" 
+              onClick={(e) => { e.stopPropagation(); setSopModal({ isOpen: true, task: row }); }}
+            >
+              <div className="sop-progress-bar">
+                <div 
+                  className="sop-progress-fill" 
+                  style={{ width: `${(row.sopSteps.split(',').filter(s => s.includes('[done]')).length / row.sopSteps.split(',').length) * 100}%` }} 
+                />
+              </div>
+              <span className="sop-progress-text">
+                SOP: {row.sopSteps.split(',').filter(s => s.includes('[done]')).length}/{row.sopSteps.split(',').length}
+              </span>
+            </div>
+          )}
+        </div>
+      )
+    },
     { key: 'clientId', label: '客戶編號', width: '80px' },
     { key: 'companyName', label: '公司行號', minWidth: '140px' },
     { key: 'handler', label: '承辦', width: '80px' },
@@ -331,6 +382,31 @@ export default function TaskManagement() {
       </TofuModal>
 
       <ConfirmDialog isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="刪除任務" message="確定要刪除嗎？" loading={mutating} />
+
+      {/* SOP 勾選清單彈窗 */}
+      <TofuModal 
+        isOpen={sopModal.isOpen} 
+        onClose={() => setSopModal({ isOpen: false, task: null })} 
+        title={`SOP 進度：${sopModal.task?.taskItem}`}
+        hideFooter
+      >
+        <div className="sop-tracker">
+          {sopModal.task?.sopSteps?.split(',').map((step, i) => {
+            const isDone = step.includes('[done]');
+            const cleanStep = step.replace('[done]', '').trim();
+            return (
+              <div key={i} className={`sop-tracker-item ${isDone ? 'done' : ''}`} onClick={() => handleToggleSopStep(sopModal.task, i)}>
+                <div className="sop-tracker-check">
+                  {isDone ? '✅' : '⭕'}
+                </div>
+                <div className="sop-tracker-content">
+                  <span className="sop-tracker-label">{cleanStep}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </TofuModal>
     </div>
   );
 }
