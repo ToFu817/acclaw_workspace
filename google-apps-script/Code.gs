@@ -117,6 +117,33 @@ function handleUpdateRow(p) {
   const sheet = getSheet(p.sheetName);
   const hs = getHeaders(sheet);
   sheet.getRange(p.rowIndex, 1, 1, hs.length).setValues([mapDataToRow(hs, p.rowData)]);
+  
+  // 同步邏輯：如果是在更新「客戶資料」的承辦人，也去更新「客戶分配」
+  if (p.sheetName === '客戶資料') {
+    const allocSheet = getSheet('客戶分配');
+    const allocHs = getHeaders(allocSheet);
+    const allocData = getSheetData(allocSheet);
+    const match = allocData.find(a => String(a.clientId).trim() === String(p.rowData.clientId).trim());
+    
+    // 找出員工資訊
+    const empData = getSheetData(getSheet('群組管理'));
+    const emp = empData.find(e => e.employeeName === p.rowData.handler);
+
+    const newAllocData = {
+      ...p.rowData,
+      employeeId: emp ? emp.employeeId : '',
+      employeeName: p.rowData.handler,
+      status: p.rowData.status,
+      unallocated: p.rowData.handler ? '否' : '是'
+    };
+
+    if (match) {
+      allocSheet.getRange(match.rowIndex, 1, 1, allocHs.length).setValues([mapDataToRow(allocHs, newAllocData)]);
+    } else {
+      allocSheet.appendRow(mapDataToRow(allocHs, newAllocData));
+    }
+  }
+  
   return { status: 'success' };
 }
 

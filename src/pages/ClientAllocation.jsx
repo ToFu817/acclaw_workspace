@@ -129,7 +129,9 @@ export default function ClientAllocation() {
                   <TofuAvatar seed={name} size={32} />
                   <div>
                     <span className="alloc-handler-name">{name}</span>
-                    <span className="alloc-handler-count">{group.clients.length} 件</span>
+                    <span className="alloc-handler-count">
+                      {Object.values(group).reduce((sum, list) => sum + list.length, 0)} 件
+                    </span>
                   </div>
                 </div>
                 <div className="alloc-handler-clients">
