@@ -78,15 +78,32 @@ export default function TaskManagement() {
   }, [form.clientId, clientMap]);
 
   const filteredTasks = useMemo(() => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const todayStr = formatDate(now, 'yyyy/MM/dd');
+    const todayMidnight = new Date().setHours(0,0,0,0);
+
+    const checkIsReviewing = (t) => {
+      if (t.status === TASK_STATUS.REVIEWING) return true;
+      if (t.status === '已完成') {
+        const compDate = t.completedDate ? formatDate(t.completedDate, 'yyyy/MM/dd') : '';
+        // 如果完成日期早於今天，或是今天完成但已經 22:00 之後
+        if (compDate && compDate < todayStr) return true;
+        if (compDate === todayStr && currentHour >= 22) return true;
+      }
+      return false;
+    };
+
     if (activeTab === 'all') return tasks;
-    const today = new Date().setHours(0,0,0,0);
 
     return tasks.filter((t) => {
       const status = t.status || '';
+      const isReviewing = checkIsReviewing(t);
       const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(status);
-      const isOverdue = t.dueDate && new Date(t.dueDate) < today;
+      const isOverdue = t.dueDate && new Date(t.dueDate) < todayMidnight;
 
-      if (activeTab === '已完成') return status === '已完成' || (t.completedDate && status !== '已審核');
+      if (activeTab === TASK_STATUS.REVIEWING) return isReviewing;
+      if (activeTab === '已完成') return status === '已完成' && !isReviewing;
       if (activeTab === '延遲中') return !hasFinished && (status === '延遲中' || isOverdue);
       if (activeTab === '待處理') return !hasFinished && !isOverdue;
       return status === activeTab;
@@ -94,15 +111,31 @@ export default function TaskManagement() {
   }, [tasks, activeTab]);
 
   const tabsWithCounts = useMemo(() => {
-    const today = new Date().setHours(0,0,0,0);
+    const now = new Date();
+    const currentHour = now.getHours();
+    const todayStr = formatDate(now, 'yyyy/MM/dd');
+    const todayMidnight = new Date().setHours(0,0,0,0);
+
+    const checkIsReviewing = (t) => {
+      if (t.status === TASK_STATUS.REVIEWING) return true;
+      if (t.status === '已完成') {
+        const compDate = t.completedDate ? formatDate(t.completedDate, 'yyyy/MM/dd') : '';
+        if (compDate && compDate < todayStr) return true;
+        if (compDate === todayStr && currentHour >= 22) return true;
+      }
+      return false;
+    };
+
     return statusTabs.map((tab) => ({
       ...tab,
       count: tab.key === 'all' ? tasks.length : tasks.filter((t) => {
         const status = t.status || '';
+        const isReviewing = checkIsReviewing(t);
         const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(status);
-        const isOverdue = t.dueDate && new Date(t.dueDate) < today;
+        const isOverdue = t.dueDate && new Date(t.dueDate) < todayMidnight;
 
-        if (tab.key === '已完成') return status === '已完成' || (t.completedDate && status !== '已審核');
+        if (tab.key === TASK_STATUS.REVIEWING) return isReviewing;
+        if (tab.key === '已完成') return status === '已完成' && !isReviewing;
         if (tab.key === '延遲中') return !hasFinished && (status === '延遲中' || isOverdue);
         if (tab.key === '待處理') return !hasFinished && !isOverdue;
         return status === tab.key;
