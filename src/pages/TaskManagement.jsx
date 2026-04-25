@@ -105,6 +105,9 @@ export default function TaskManagement() {
       const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(status);
       const isOverdue = t.dueDate && new Date(t.dueDate) < todayMidnight;
 
+      // 「全部」頁籤：顯示所有未審核完畢的任務
+      if (activeTab === 'all') return status !== '已審核';
+      
       if (activeTab === TASK_STATUS.REVIEWING) return isReviewing;
       if (activeTab === '已完成') return status === '已完成' && !isReviewing;
       if (activeTab === '延遲中') return !hasFinished && (status === '延遲中' || isOverdue);

@@ -32,15 +32,17 @@ export default function ClientAllocation() {
   // 2. 已分配：按承辦人員分組顯示
   const handlerGroups = useMemo(() => {
     const groups = {};
-    // 初始化清單，確保所有員工都有出現
     employees.forEach((emp) => {
-      groups[emp.employeeName] = { clients: [] };
+      groups[emp.employeeName] = { 
+        '營業中': [], '停業': [], '歇業': [], '轉出': [], '其他': []
+      };
     });
     
-    // 將已有承辦人的客戶塞進去
     clients.forEach((c) => {
       if (c.handler && groups[c.handler]) {
-        groups[c.handler].clients.push(c);
+        const status = c.status || '其他';
+        const groupKey = ['營業中', '停業', '歇業', '轉出'].includes(status) ? status : '其他';
+        groups[c.handler][groupKey].push(c);
       }
     });
     return groups;
@@ -127,30 +129,21 @@ export default function ClientAllocation() {
                   </div>
                 </div>
                 <div className="alloc-handler-clients">
-                  {group.clients.map((c) => (
-                    <div key={c.clientId} className="alloc-handler-client-row">
-                      <span>{c.companyName}</span>
-                      <div className="alloc-client-actions">
-                        <TofuButton
-                          size="xs"
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedClient(c);
-                            setSelectedHandler(c.handler);
-                            setAssignModal(true);
-                          }}
-                        >
-                          更改
-                        </TofuButton>
-                        <TofuButton
-                          size="xs"
-                          variant="danger"
-                          onClick={() => setDeleteTarget(c)}
-                        >
-                          移除
-                        </TofuButton>
+                  {Object.entries(group).map(([status, groupClients]) => (
+                    groupClients.length > 0 && (
+                      <div key={status} className="alloc-status-group">
+                        <div className="alloc-status-label">{status}</div>
+                        {groupClients.map((c) => (
+                          <div key={c.clientId} className="alloc-handler-client-row">
+                            <span>{c.companyName}</span>
+                            <div className="alloc-client-actions">
+                              <TofuButton size="xs" variant="ghost" onClick={() => { setSelectedClient(c); setSelectedHandler(c.handler); setAssignModal(true); }}>更改</TofuButton>
+                              <TofuButton size="xs" variant="danger" onClick={() => setDeleteTarget(c)}>移除</TofuButton>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
+                    )
                   ))}
                 </div>
               </TofuCard>

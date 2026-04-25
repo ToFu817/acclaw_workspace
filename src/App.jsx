@@ -39,7 +39,7 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="tasks" element={<TaskManagement />} />
-        <Route path="task-items" element={<TaskItems />} />
+        <Route path="items" element={<TaskItems />} />
         <Route path="groups" element={<GroupManagement />} />
         <Route path="clients" element={<ClientData />} />
         <Route path="allocation" element={<ClientAllocation />} />
