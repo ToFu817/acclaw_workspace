@@ -7,6 +7,7 @@ export const NAV_ITEMS = [
   { path: '/items', label: '任務項目', icon: '🛠️' },
   { path: '/sop', label: 'SOP流程', icon: '📝' },
   { path: '/groups', label: '群組管理', icon: '🔐' },
+  { path: '/schedule', label: '年度任務計畫', icon: '📅' },
 ];
 
 export const SHEET_NAMES = {
@@ -17,6 +18,7 @@ export const SHEET_NAMES = {
   ALLOCATIONS: '客戶分配',
   SOP: '工作標準流程SOP',
   BILLING: '收費資料',
+  ANNUAL: '年度任務計畫',
 };
 
 export const MONTH_NAMES = [

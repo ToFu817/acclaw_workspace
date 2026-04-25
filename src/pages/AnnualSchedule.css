@@ -1,144 +1,58 @@
-.schedule-page {
+.annual-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
 }
 
-.schedule-page__header h2 {
-  font-size: var(--font-size-xl);
-  font-weight: 800;
-  color: var(--color-wood-dark);
-}
-
-.schedule-page__header p {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  margin-top: 4px;
-}
-
-.schedule-grid {
+.annual-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-md);
+  gap: var(--space-lg);
 }
 
-.schedule-card {
-  cursor: pointer;
-  padding: var(--space-md) !important;
-  border: 2px solid transparent;
-  transition: border-color var(--duration-fast) var(--transition-smooth);
-}
-
-.schedule-card--current {
-  border-color: var(--color-green-deep);
-}
-
-.schedule-card--selected {
-  border-color: var(--color-wood);
-}
-
-.schedule-card__header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
-}
-
-.schedule-card__month {
-  font-size: var(--font-size-md);
-  font-weight: 800;
-  color: var(--color-wood-dark);
-  flex: 1;
-}
-
-.schedule-card__tasks {
-  list-style: none;
-  padding: 0;
+.month-card {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
-.schedule-task {
+.month-tasks {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-light);
-  padding: 4px 0;
 }
 
-.schedule-task__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.schedule-task__text {
-  line-height: 1.4;
-}
-
-/* Detail */
-.schedule-detail {
-  margin-top: var(--space-md);
-}
-
-.schedule-detail__title {
-  font-size: var(--font-size-lg);
-  font-weight: 700;
-  color: var(--color-wood-dark);
-  margin-bottom: var(--space-lg);
-}
-
-.schedule-detail__list {
+.month-task-item {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.schedule-detail__item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-md);
-  padding: var(--space-md);
-  background: var(--color-cream);
-  border-radius: var(--radius-md);
-}
-
-.schedule-detail__number {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--color-wood);
-  color: white;
-  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
-.schedule-detail__content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.schedule-detail__task {
+  padding: 8px 12px;
+  background: var(--color-tofu);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text);
+  transition: all 0.2s;
 }
 
-.schedule-detail__note {
+.month-task-item:hover {
+  background: var(--color-cream);
+  transform: translateX(4px);
+}
+
+.month-task-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.month-task-item:hover .month-task-actions {
+  opacity: 1;
+}
+
+.month-empty {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-}
-
-.schedule-detail__empty {
+  font-style: italic;
   text-align: center;
-  color: var(--color-text-muted);
-  padding: var(--space-xl);
+  margin-top: 8px;
 }

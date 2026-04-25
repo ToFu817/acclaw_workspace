@@ -117,9 +117,17 @@ export default function Dashboard() {
             <h3>本月待辦</h3>
           </div>
           <div className="summary-card__body">
-            <p className="summary-card__note">
-              依據年度日程安排，請確認本月各項申報作業的進度。
-            </p>
+            <div className="monthly-goals">
+              {(stats?.monthlyGoals || []).map((goal, i) => (
+                <div key={i} className="monthly-goal-item">
+                  <span className="goal-bullet">•</span>
+                  <span className="goal-text">{goal}</span>
+                </div>
+              ))}
+              {(!stats?.monthlyGoals || stats.monthlyGoals.length === 0) && (
+                <p className="summary-card__note">本月無特殊年度任務</p>
+              )}
+            </div>
           </div>
         </TofuCard>
       </div>

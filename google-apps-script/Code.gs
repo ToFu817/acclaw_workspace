@@ -50,6 +50,7 @@ function doPost(e) {
       case 'completeTask': return res(handleCompleteTask(p));
       case 'reviewTask': return res(handleReviewTask(p));
       case 'getDashboardStats': return res(handleGetDashboardStats());
+      case 'initAnnual': return res(seedAnnualSchedule());
       default: return res({ status: 'error', message: '未知動作' });
     }
   } catch (err) {
@@ -240,7 +241,44 @@ function handleGetDashboardStats() {
     else stats.pending++;
   });
 
-  return { status: 'success', data: { ...stats, totalClients: getSheetData(getSheet('客戶資料')).length }};
+  // 加入年度任務
+  const annualTasks = getSheetData(getSheet('年度任務計畫'));
+  const currentMonth = String(now.getMonth() + 1);
+  const thisMonthAnnual = annualTasks.filter(a => String(a['月份']) === currentMonth).map(a => a['任務名稱']);
+
+  return { 
+    status: 'success', 
+    data: { 
+      ...stats, 
+      totalClients: getSheetData(getSheet('客戶資料')).length,
+      monthlyGoals: thisMonthAnnual 
+    }
+  };
+}
+
+function seedAnnualSchedule() {
+  const sheet = getSheet('年度任務計畫');
+  if (sheet.getLastRow() > 1) return { status: 'success', message: 'Already initialized' };
+  
+  const data = [
+    ["1", "11-12月營業稅申報"], ["1", "各類所得扣繳申報作業"],
+    ["2", "二代健保申報"], ["2", "11-12月帳務處理"], ["2", "03-04月統購發票寄送"],
+    ["3", "01-02月營業稅申報"], ["3", "股東平台申報"], ["3", "營所稅結算申報編製作業"], ["3", "會計師簽證資料準備"],
+    ["4", "營所稅結算申報編製作業"], ["4", "會計師簽證資料準備"], ["4", "05-06月統購發票寄送"],
+    ["5", "03-04月份營業稅申報"], ["5", "營所稅結算申報"], ["5", "綜合所得稅結算申報"], ["5", "稅務簽證報告書簽證作業"],
+    ["6", "01-04月份帳務處理"], ["6", "07-08月統購發票寄送"], ["6", "財務簽證報告書簽證作業"],
+    ["7", "05-06月營業稅申報"], ["7", "05-06月份帳務處理"],
+    ["8", "05-06月份帳務處理"], ["8", "09-10月統購發票寄送"],
+    ["9", "07-08月營業稅申報"], ["9", "07-08月份帳務處理"], ["9", "營所稅預估暫繳申報"],
+    ["10", "07-08月份帳務處理"], ["10", "11-12月統購發票寄送"], ["10", "上年度未分配盈餘+股利二代前置作業"],
+    ["11", "9-10月營業稅申報"], ["11", "9-10月份帳務處理"], ["11", "各類所得扣繳申報資料調查"],
+    ["12", "9-10月份帳務處理"], ["12", "01-02月統購發票寄送"], ["12", "扣繳申報前置作業"]
+  ];
+  
+  const hs = ["月份", "任務名稱"];
+  sheet.getRange(1, 1, 1, 2).setValues([hs]);
+  sheet.getRange(2, 1, data.length, 2).setValues(data);
+  return { status: 'success' };
 }
 
 function res(obj) { 

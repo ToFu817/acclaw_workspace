@@ -125,3 +125,31 @@
   color: var(--color-text-light);
   line-height: 1.8;
 }
+
+.monthly-goals {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.monthly-goal-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: var(--color-tofu);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  border-left: 3px solid var(--color-sage);
+}
+
+.goal-bullet {
+  color: var(--color-sage);
+  font-weight: bold;
+}
+
+.goal-text {
+  color: var(--color-text);
+  line-height: 1.4;
+}
