@@ -175,14 +175,36 @@ function handleBatchImport(p) {
 
 function handleGetDashboardStats() {
   const tasks = getSheetData(getSheet('工作任務'));
-  return { status: 'success', data: {
-    pending: tasks.filter(t => t.status === '待處理').length,
-    delayed: tasks.filter(t => t.status === '延遲中').length,
-    completed: tasks.filter(t => t.status === '已完成').length,
-    reviewing: tasks.filter(t => t.status === '待審核').length,
-    reviewed: tasks.filter(t => t.status === '已審核').length,
-    totalClients: getSheetData(getSheet('客戶資料')).length
-  }};
+  const now = new Date();
+  const currentHour = now.getHours();
+  const todayStr = Utilities.formatDate(now, 'Asia/Taipei', 'yyyy/MM/dd');
+  const todayMidnight = new Date(now.setHours(0,0,0,0));
+
+  let stats = { pending: 0, delayed: 0, completed: 0, reviewing: 0, reviewed: 0 };
+
+  tasks.forEach(t => {
+    const status = t.status || '';
+    const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(status);
+    const isOverdue = t.dueDate && new Date(t.dueDate) < todayMidnight;
+    
+    // 判斷是否在「待審核」狀態 (已完成且過了晚上10點，或是日期早於今天)
+    let isReviewing = (status === '待審核');
+    if (status === '已完成') {
+      if (t.completedDate) {
+        const compDateStr = Utilities.formatDate(new Date(t.completedDate), 'Asia/Taipei', 'yyyy/MM/dd');
+        if (compDateStr < todayStr) isReviewing = true;
+        if (compDateStr === todayStr && currentHour >= 22) isReviewing = true;
+      }
+    }
+
+    if (status === '已審核') stats.reviewed++;
+    else if (isReviewing) stats.reviewing++;
+    else if (status === '已完成') stats.completed++;
+    else if (!hasFinished && (status === '延遲中' || isOverdue)) stats.delayed++;
+    else stats.pending++;
+  });
+
+  return { status: 'success', data: { ...stats, totalClients: getSheetData(getSheet('客戶資料')).length }};
 }
 
 function res(obj) { 

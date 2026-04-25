@@ -1,11 +1,33 @@
-.task-mgmt {
+.delayed-highlight {
+  border: 2px solid #ff4d4f;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 77, 79, 0.05);
+  display: inline-block;
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 77, 79, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0); }
+}
+
+.tasks-page {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
 }
 
-.task-mgmt__toolbar {
+.tasks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.tasks-actions {
   display: flex;
   gap: var(--space-sm);
-  flex-wrap: wrap;
 }

@@ -99,26 +99,30 @@ export default function TaskManagement() {
       return false;
     };
 
-    const filteredData = tasks.filter((t) => {
+    const checkIsDelayed = (t) => {
       const status = t.status || '';
-      const isReviewing = checkIsReviewing(t);
       const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(status);
       const isOverdue = t.dueDate && new Date(t.dueDate) < todayMidnight;
+      return !hasFinished && (status === '延遲中' || isOverdue);
+    };
 
-      // 「全部」頁籤：顯示所有未審核完畢的任務
-      if (activeTab === 'all') return status !== '已審核';
-      
+    const filteredData = tasks.filter((t) => {
+      const isReviewing = checkIsReviewing(t);
+      const isDelayed = checkIsDelayed(t);
+      const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(t.status || '');
+
+      if (activeTab === 'all') return t.status !== '已審核';
       if (activeTab === TASK_STATUS.REVIEWING) return isReviewing;
-      if (activeTab === '已完成') return status === '已完成' && !isReviewing;
-      if (activeTab === '延遲中') return !hasFinished && (status === '延遲中' || isOverdue);
-      if (activeTab === '待處理') return !hasFinished && !isOverdue;
-      return status === activeTab;
+      if (activeTab === '已完成') return t.status === '已完成' && !isReviewing;
+      if (activeTab === '延遲中') return isDelayed;
+      if (activeTab === '待處理') return !hasFinished && !isDelayed && !isReviewing;
+      return t.status === activeTab;
     });
 
-    return { filteredTasks: filteredData, checkIsReviewing };
+    return { filteredTasks: filteredData, checkIsReviewing, checkIsDelayed };
   }, [tasks, activeTab]);
 
-  const { filteredTasks, checkIsReviewing } = filtered;
+  const { filteredTasks, checkIsReviewing, checkIsDelayed } = filtered;
 
   const tabsWithCounts = useMemo(() => {
     const now = new Date();
@@ -270,8 +274,18 @@ export default function TaskManagement() {
       width: '90px',
       render: (v, row) => {
         const isReviewing = checkIsReviewing(row);
-        const displayStatus = isReviewing ? '待審核' : v;
-        return <TofuBadge color={TASK_STATUS_COLORS[displayStatus] || 'yellow'}>{displayStatus}</TofuBadge>;
+        const isDelayed = checkIsDelayed(row);
+        let displayStatus = v;
+        if (isReviewing) displayStatus = '待審核';
+        else if (isDelayed) displayStatus = '延遲中';
+
+        return (
+          <div className={isDelayed ? 'delayed-highlight' : ''}>
+            <TofuBadge color={TASK_STATUS_COLORS[displayStatus] || 'yellow'}>
+              {displayStatus}
+            </TofuBadge>
+          </div>
+        );
       },
     },
   ];
