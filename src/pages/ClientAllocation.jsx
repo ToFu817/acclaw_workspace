@@ -125,6 +125,7 @@ export default function ClientAllocation() {
                     (groupClients?.length || 0) > 0 && (
                       <div key={status} className="alloc-status-group">
                         <div className="alloc-status-label">{status}</div>
+                        {groupClients.map((c) => (
                           <div key={c.clientId} className="alloc-handler-client-row">
                             <div className="alloc-handler-client-info">
                               <span className="alloc-client-id">[{c.clientId}]</span>

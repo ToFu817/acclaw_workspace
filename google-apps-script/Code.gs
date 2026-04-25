@@ -1,6 +1,6 @@
 /**
  * ============================================
- * AccLaw 會計師案件管理系統 — 全局同步版 (精簡版)
+ * AccLaw 會計師案件管理系統 — 全局同步版
  * ============================================
  */
 
@@ -24,19 +24,63 @@ const FIELD_MAP = {
   'sopId': 'SOP編號', 'sopName': 'SOP名稱', 'steps': '步驟',
   // 收費資料
   'billingMonth': '收費月份', 'amount': '收費金額', 'unpaid': '待收款', 'paid': '已收款',
-  'paymentDate': '收款日期', 'bankAccount': '銀行帳戶'
+  'paymentDate': '收款日期', 'bankAccount': '銀行帳戶',
+  // 年度任務
+  'month': '月份', 'annualTask': '任務名稱'
 };
+
+/**
+ * 手動編輯 Google Sheet 時自動同步
+ */
+function onEdit(e) {
+  const range = e.range;
+  const sheet = range.getSheet();
+  const sheetName = sheet.getName();
+  
+  if (sheetName === '客戶資料') {
+    const row = range.getRow();
+    if (row < 2) return; // 標題列不處理
+    
+    const hs = getHeaders(sheet);
+    const rowData = getSheetData(sheet).find(d => d.rowIndex === row);
+    if (rowData) {
+      syncToAllocation(rowData);
+    }
+  }
+}
+
+function syncToAllocation(clientData) {
+  const allocSheet = getSheet('客戶分配');
+  const hs = getHeaders(allocSheet);
+  const data = getSheetData(allocSheet);
+  
+  // 查找是否已存在
+  const match = data.find(d => String(d.clientId).trim() === String(clientData.clientId).trim());
+  
+  // 找出員工編號
+  const empData = getSheetData(getSheet('群組管理'));
+  const emp = empData.find(e => e.employeeName === clientData.handler);
+  
+  const allocRow = {
+    ...clientData,
+    employeeId: emp ? emp.employeeId : '',
+    employeeName: clientData.handler || '',
+    unallocated: (clientData.handler && String(clientData.handler).trim() !== '') ? '否' : '是'
+  };
+  
+  if (match) {
+    allocSheet.getRange(match.rowIndex, 1, 1, hs.length).setValues([mapDataToRow(hs, allocRow)]);
+  } else {
+    allocSheet.appendRow(mapDataToRow(hs, allocRow));
+  }
+}
 
 function doGet(e) {
   return ContentService.createTextOutput("AccLaw 後端服務已成功啟動！").setMimeType(ContentService.MimeType.TEXT);
 }
 
 function doPost(e) {
-  // 防呆判斷：如果是手動執行或是空請求
-  if (!e || !e.postData || !e.postData.contents) {
-    return res({ status: 'error', message: '請從前端應用程式發送請求，不要直接在腳本編輯器點擊執行。' });
-  }
-
+  if (!e || !e.postData || !e.postData.contents) return res({ status: 'error', message: '無效請求' });
   const req = JSON.parse(e.postData.contents);
   const { action, params: p = {} } = req;
   try {
@@ -65,7 +109,6 @@ function getInternalKey(header) {
   if (h === '狀態' || h === '目前狀態') return 'status';
   if (h === '審核時間' || h === '審核日期') return 'reviewDate';
   if (h === '備註' || h === '備忘錄') return 'note';
-  if (h === '聯絡地址(發票寄送地址)' || h === '聯絡地址') return 'contactAddress';
   return h;
 }
 
@@ -111,6 +154,7 @@ function handleAddRow(p) {
   const sheet = getSheet(p.sheetName);
   const hs = getHeaders(sheet);
   sheet.appendRow(mapDataToRow(hs, p.rowData));
+  if (p.sheetName === '客戶資料') syncToAllocation(p.rowData);
   return { status: 'success' };
 }
 
@@ -118,33 +162,7 @@ function handleUpdateRow(p) {
   const sheet = getSheet(p.sheetName);
   const hs = getHeaders(sheet);
   sheet.getRange(p.rowIndex, 1, 1, hs.length).setValues([mapDataToRow(hs, p.rowData)]);
-  
-  // 同步邏輯：如果是在更新「客戶資料」的承辦人，也去更新「客戶分配」
-  if (p.sheetName === '客戶資料') {
-    const allocSheet = getSheet('客戶分配');
-    const allocHs = getHeaders(allocSheet);
-    const allocData = getSheetData(allocSheet);
-    const match = allocData.find(a => String(a.clientId).trim() === String(p.rowData.clientId).trim());
-    
-    // 找出員工資訊
-    const empData = getSheetData(getSheet('群組管理'));
-    const emp = empData.find(e => e.employeeName === p.rowData.handler);
-
-    const newAllocData = {
-      ...p.rowData,
-      employeeId: emp ? emp.employeeId : '',
-      employeeName: p.rowData.handler,
-      status: p.rowData.status,
-      unallocated: p.rowData.handler ? '否' : '是'
-    };
-
-    if (match) {
-      allocSheet.getRange(match.rowIndex, 1, 1, allocHs.length).setValues([mapDataToRow(allocHs, newAllocData)]);
-    } else {
-      allocSheet.appendRow(mapDataToRow(allocHs, newAllocData));
-    }
-  }
-  
+  if (p.sheetName === '客戶資料') syncToAllocation(p.rowData);
   return { status: 'success' };
 }
 
@@ -192,11 +210,11 @@ function handleBatchImport(p) {
   p.rows.forEach(newRow => {
     const match = idKey ? existing.find(e => String(e[idKey]).trim() === String(newRow[idKey]).trim()) : null;
     if (match) {
-      let updateData = { ...match, ...newRow };
-      sheet.getRange(match.rowIndex, 1, 1, hs.length).setValues([mapDataToRow(hs, updateData)]);
+      sheet.getRange(match.rowIndex, 1, 1, hs.length).setValues([mapDataToRow(hs, { ...match, ...newRow })]);
     } else {
       sheet.appendRow(mapDataToRow(hs, newRow));
     }
+    if (p.sheetName === '客戶資料') syncToAllocation(newRow);
   });
   return { status: 'success', message: '匯入完成' };
 }
@@ -209,74 +227,49 @@ function handleGetDashboardStats() {
   const todayTime = new Date(now.setHours(0,0,0,0)).getTime();
 
   let stats = { pending: 0, delayed: 0, completed: 0, reviewing: 0, reviewed: 0 };
-
   tasks.forEach(t => {
     const status = String(t.status || '').trim();
-    let compDateStr = '';
-    if (t.completedDate) {
-      try {
-        const d = new Date(t.completedDate);
-        if (!isNaN(d.getTime())) {
-          compDateStr = Utilities.formatDate(d, 'Asia/Taipei', 'yyyy/MM/dd');
-        }
-      } catch(e) {}
-    }
-
+    const compDate = t.completedDate ? Utilities.formatDate(new Date(t.completedDate), 'Asia/Taipei', 'yyyy/MM/dd') : '';
     const isOverdue = t.dueDate && (new Date(t.dueDate).getTime() < todayTime);
-    const hasFinished = compDateStr !== '' || ['已完成', '待審核', '已審核'].includes(status);
-
-    // 判斷是否待審核
+    
     let isReviewing = (status === '待審核');
-    if (status === '已完成' || compDateStr !== '') {
-      if (compDateStr !== '') {
-        if (compDateStr < todayStr) isReviewing = true;
-        else if (compDateStr === todayStr && currentHour >= 22) isReviewing = true;
+    if (status === '已完成' || compDate !== '') {
+      if (compDate !== '') {
+        if (compDate < todayStr) isReviewing = true;
+        else if (compDate === todayStr && currentHour >= 22) isReviewing = true;
       }
     }
 
     if (status === '已審核') stats.reviewed++;
     else if (isReviewing) stats.reviewing++;
-    else if (status === '已完成' || compDateStr !== '') stats.completed++;
-    else if (!hasFinished && (status === '延遲中' || isOverdue)) stats.delayed++;
+    else if (status === '已完成' || compDate !== '') stats.completed++;
+    else if (status === '延遲中' || isOverdue) stats.delayed++;
     else stats.pending++;
   });
 
-  // 加入年度任務
   const annualTasks = getSheetData(getSheet('年度任務計畫'));
   const currentMonth = String(now.getMonth() + 1);
   const thisMonthAnnual = annualTasks.filter(a => String(a['月份']) === currentMonth).map(a => a['任務名稱']);
 
-  return { 
-    status: 'success', 
-    data: { 
-      ...stats, 
-      totalClients: getSheetData(getSheet('客戶資料')).length,
-      monthlyGoals: thisMonthAnnual 
-    }
-  };
+  return { status: 'success', data: { ...stats, totalClients: getSheetData(getSheet('客戶資料')).length, monthlyGoals: thisMonthAnnual }};
 }
 
 function seedAnnualSchedule() {
   const sheet = getSheet('年度任務計畫');
-  if (sheet.getLastRow() > 1) return { status: 'success', message: 'Already initialized' };
-  
+  if (sheet.getLastRow() > 1) return { status: 'success' };
   const data = [
-    ["1", "11-12月營業稅申報"], ["1", "各類所得扣繳申報作業"],
-    ["2", "二代健保申報"], ["2", "11-12月帳務處理"], ["2", "03-04月統購發票寄送"],
+    ["1", "11-12月營業稅申報"], ["1", "各類所得扣繳申報作業"], ["2", "二代健保申報"], ["2", "11-12月帳務處理"], ["2", "03-04月統購發票寄送"],
     ["3", "01-02月營業稅申報"], ["3", "股東平台申報"], ["3", "營所稅結算申報編製作業"], ["3", "會計師簽證資料準備"],
     ["4", "營所稅結算申報編製作業"], ["4", "會計師簽證資料準備"], ["4", "05-06月統購發票寄送"],
     ["5", "03-04月份營業稅申報"], ["5", "營所稅結算申報"], ["5", "綜合所得稅結算申報"], ["5", "稅務簽證報告書簽證作業"],
     ["6", "01-04月份帳務處理"], ["6", "07-08月統購發票寄送"], ["6", "財務簽證報告書簽證作業"],
-    ["7", "05-06月營業稅申報"], ["7", "05-06月份帳務處理"],
-    ["8", "05-06月份帳務處理"], ["8", "09-10月統購發票寄送"],
+    ["7", "05-06月營業稅申報"], ["7", "05-06月份帳務處理"], ["8", "05-06月份帳務處理"], ["8", "09-10月統購發票寄送"],
     ["9", "07-08月營業稅申報"], ["9", "07-08月份帳務處理"], ["9", "營所稅預估暫繳申報"],
     ["10", "07-08月份帳務處理"], ["10", "11-12月統購發票寄送"], ["10", "上年度未分配盈餘+股利二代前置作業"],
     ["11", "9-10月營業稅申報"], ["11", "9-10月份帳務處理"], ["11", "各類所得扣繳申報資料調查"],
     ["12", "9-10月份帳務處理"], ["12", "01-02月統購發票寄送"], ["12", "扣繳申報前置作業"]
   ];
-  
-  const hs = ["月份", "任務名稱"];
-  sheet.getRange(1, 1, 1, 2).setValues([hs]);
+  sheet.getRange(1, 1, 1, 2).setValues([["月份", "任務名稱"]]);
   sheet.getRange(2, 1, data.length, 2).setValues(data);
   return { status: 'success' };
 }
