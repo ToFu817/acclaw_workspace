@@ -4,7 +4,7 @@ import { useGasRpc } from '../hooks/useGasRpc';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/UI/TofuToast';
 import { SHEET_NAMES, BILLING_FIELDS } from '../utils/constants';
-import { formatCurrency, autoFillClientData, generateId } from '../utils/helpers';
+import { formatCurrency, autoFillClientData } from '../utils/helpers';
 import TofuTable from '../components/UI/TofuTable';
 import TofuButton from '../components/UI/TofuButton';
 import TofuModal from '../components/UI/TofuModal';
@@ -21,9 +21,9 @@ import './BillingData.css';
 export default function BillingData() {
   const { isAdmin } = useAuth();
   const toast = useToast();
-  const { data, loading, refetch } = useGasQuery(SHEET_NAMES.BILLING);
-  const { data: clients } = useGasQuery(SHEET_NAMES.CLIENTS);
-  const { data: employees } = useGasQuery(SHEET_NAMES.GROUPS);
+  const { data = [], loading, refetch } = useGasQuery(SHEET_NAMES.BILLING);
+  const { data: clients = [] } = useGasQuery(SHEET_NAMES.CLIENTS);
+  const { data: employees = [] } = useGasQuery(SHEET_NAMES.GROUPS);
   const { add, update, remove, importBatch, loading: mutating } = useGasRpc();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -33,14 +33,14 @@ export default function BillingData() {
   const [importOpen, setImportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
 
-  // Stats
+  // 收款統計
   const stats = useMemo(() => {
     const byHandler = {};
     let totalAmount = 0;
     let totalPaid = 0;
     let totalUnpaid = 0;
 
-    data.forEach((row) => {
+    (data || []).forEach((row) => {
       const amount = Number(row.amount) || 0;
       const paid = Number(row.paid) || 0;
       const unpaid = Number(row.unpaid) || 0;
@@ -59,7 +59,7 @@ export default function BillingData() {
     return { totalAmount, totalPaid, totalUnpaid, byHandler };
   }, [data]);
 
-  const unpaidList = useMemo(() => data.filter((r) => Number(r.unpaid) > 0), [data]);
+  const unpaidList = useMemo(() => (data || []).filter((r) => Number(r.unpaid) > 0), [data]);
 
   const filteredData = useMemo(() => {
     if (activeTab === 'all') return data;
@@ -80,23 +80,52 @@ export default function BillingData() {
     setModalOpen(true);
   };
 
+  // 處理客戶編號變更：自動帶入公司名稱
   const handleFormChange = (field, value) => {
     setForm((prev) => {
       const updated = { ...prev, [field]: value };
       if (field === 'clientId') {
-        const filled = autoFillClientData(value, clients);
-        Object.assign(updated, filled);
+        const client = clients.find(c => String(c.clientId).trim() === String(value).trim());
+        if (client) {
+          updated.companyName = client.companyName || '';
+          updated.handler = client.handler || '';
+        }
       }
       return updated;
     });
   };
 
   const handleSave = async () => {
-    if (!form.clientId) { toast.error('請填寫客戶編號'); return; }
+    if (!form.clientId) return toast.error('請填寫客戶編號');
     const result = editing
       ? await update(SHEET_NAMES.BILLING, editing.rowIndex, form)
       : await add(SHEET_NAMES.BILLING, form);
-    if (result.success) { toast.success(editing ? '更新成功' : '新增成功'); setModalOpen(false); refetch(); }
+    if (result.success) {
+      toast.success(editing ? '更新成功' : '新增成功');
+      setModalOpen(false);
+      refetch();
+    }
+  };
+
+  // 列表一鍵收款功能
+  const handleTogglePaid = async (row) => {
+    const isCurrentlyPaid = Number(row.unpaid) === 0 && Number(row.paid) > 0;
+    
+    let updates;
+    if (isCurrentlyPaid) {
+      // 取消勾選
+      updates = { ...row, paid: 0, unpaid: row.amount, paymentDate: '' };
+    } else {
+      // 勾選：收齊全額
+      const today = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      updates = { ...row, paid: row.amount, unpaid: 0, paymentDate: today };
+    }
+
+    const result = await update(SHEET_NAMES.BILLING, row.rowIndex, updates);
+    if (result.success) {
+      toast.success(isCurrentlyPaid ? '已取消收款狀態' : '收款成功！');
+      refetch();
+    }
   };
 
   const handleDelete = async () => {
@@ -109,66 +138,41 @@ export default function BillingData() {
     if (result.success) { toast.success(result.message); setImportOpen(false); refetch(); }
   };
 
-  const handleTogglePaid = async (row) => {
-    if (Number(row.unpaid) === 0 && Number(row.paid) > 0) {
-      // 如果已經收過，取消勾選則清空已收
-      await update(SHEET_NAMES.BILLING, row.rowIndex, {
-        ...row,
-        paid: 0,
-        unpaid: row.amount,
-        paymentDate: ''
-      });
-    } else {
-      // 勾選：收齊全額
-      const today = new Date().toISOString().split('T')[0].replace(/-/g, '/');
-      await update(SHEET_NAMES.BILLING, row.rowIndex, {
-        ...row,
-        paid: row.amount,
-        unpaid: 0,
-        paymentDate: today
-      });
-    }
-    refetch();
-  };
-
   const handlerOptions = employees.map((e) => ({ value: e.employeeName, label: e.employeeName }));
 
   const tabs = [
-    { key: 'all', label: '全部', count: data.length },
-    { key: 'unpaid', label: '待收款', count: unpaidList.length },
-    { key: 'paid', label: '已收款', count: data.filter((r) => Number(r.unpaid) === 0 && Number(r.paid) > 0).length },
+    { key: 'all', label: '全部', count: data?.length || 0 },
+    { key: 'unpaid', label: '待收款', count: unpaidList?.length || 0 },
+    { key: 'paid', label: '已收款', count: (data || []).filter((r) => Number(r.unpaid) === 0 && Number(r.paid) > 0).length },
   ];
 
   const columns = [
     { key: 'clientId', label: '客戶編號', width: '90px' },
-    { key: 'companyName', label: '公司行號', minWidth: '140px' },
+    { key: 'companyName', label: '公司行號', minWidth: '160px' },
     { key: 'handler', label: '承辦', width: '80px' },
-    { key: 'billingMonth', label: '收費月份', width: '100px' },
+    { key: 'billingMonth', label: '月份', width: '90px' },
     { 
-      key: 'paid', 
+      key: 'isPaid', 
       label: '收款', 
       width: '50px', 
       align: 'center',
       render: (_, row) => (
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <input 
-            type="checkbox" 
-            checked={Number(row.unpaid) === 0 && Number(row.paid) > 0} 
-            onChange={() => handleTogglePaid(row)}
-            style={{ cursor: 'pointer', width: '18px', height: '18px' }}
-          />
-        </div>
+        <input 
+          type="checkbox" 
+          checked={Number(row.unpaid) === 0 && Number(row.paid) > 0} 
+          onChange={() => handleTogglePaid(row)}
+          style={{ cursor: 'pointer', width: '20px', height: '20px' }}
+        />
       )
     },
-    { key: 'amount', label: '收費金額', width: '90px', render: (v) => formatCurrency(v) },
-    { key: 'paid_val', label: '已收', width: '90px', render: (_, row) => <span style={{ color: '#3A6B3A' }}>{formatCurrency(row.paid)}</span> },
-    { key: 'unpaid', label: '待收', width: '90px', render: (v) => Number(v) > 0 ? <span style={{ color: '#D4726A', fontWeight: 700 }}>{formatCurrency(v)}</span> : '0' },
-    { key: 'paymentDate', label: '收款日期', width: '100px' },
+    { key: 'amount', label: '總額', width: '100px', render: (v) => formatCurrency(v) },
+    { key: 'paid', label: '已收', width: '100px', render: (v) => <span style={{ color: '#3A6B3A', fontWeight: 600 }}>{formatCurrency(v)}</span> },
+    { key: 'unpaid', label: '待收', width: '100px', render: (v) => Number(v) > 0 ? <span style={{ color: '#D4726A', fontWeight: 700 }}>{formatCurrency(v)}</span> : '0' },
+    { key: 'paymentDate', label: '收款日期', width: '110px' },
   ];
 
   return (
     <div className="billing-page">
-      {/* Overview Stats */}
       {isAdmin && (
         <div className="billing-stats stagger-children">
           <TofuCard className="billing-stat-card">
@@ -189,33 +193,8 @@ export default function BillingData() {
         </div>
       )}
 
-      {/* Handler Performance */}
-      {isAdmin && Object.keys(stats.byHandler).length > 0 && (
-        <TofuCard hoverable={false}>
-          <h3 style={{ marginBottom: 'var(--space-md)', fontWeight: 700, color: 'var(--color-wood-dark)' }}>
-            📊 各承辦業績
-          </h3>
-          <div className="billing-handler-grid">
-            {Object.entries(stats.byHandler).map(([handler, s]) => (
-              <div key={handler} className="billing-handler-item">
-                <TofuAvatar seed={handler} size={32} />
-                <div className="billing-handler-info">
-                  <span className="billing-handler-name">{handler}</span>
-                  <span className="billing-handler-detail">
-                    {s.count} 筆 | 總額 ${formatCurrency(s.total)} | 已收 ${formatCurrency(s.paid)}
-                  </span>
-                </div>
-                {s.unpaid > 0 && (
-                  <TofuBadge color="pink" size="sm">待收 ${formatCurrency(s.unpaid)}</TofuBadge>
-                )}
-              </div>
-            ))}
-          </div>
-        </TofuCard>
-      )}
-
       <div className="billing-toolbar">
-        <TofuButton onClick={() => handleOpen()} icon="➕">新增收費</TofuButton>
+        <TofuButton onClick={() => handleOpen()} icon="➕">新增收費紀錄</TofuButton>
         {isAdmin && (
           <TofuButton variant="secondary" onClick={() => setImportOpen(true)} icon="📥">Excel 匯入</TofuButton>
         )}
@@ -223,9 +202,7 @@ export default function BillingData() {
 
       <TofuTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
-      <TofuTable
-        columns={columns}
-        data={filteredData}
+      <TofuTable columns={columns} data={filteredData} loading={loading}
         actions={(row) => (
           <>
             <TofuButton size="sm" variant="ghost" onClick={() => handleOpen(row)}>編輯</TofuButton>
@@ -236,15 +213,17 @@ export default function BillingData() {
 
       <TofuModal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? '編輯收費' : '新增收費'} onConfirm={handleSave} loading={mutating}>
         <div className="modal-form-grid">
-          <TofuInput label="客戶編號" value={form.clientId || ''} onChange={(v) => handleFormChange('clientId', v)} placeholder="輸入自動帶入公司名稱" required />
-          <TofuInput label="公司行號名稱" value={form.companyName || ''} onChange={(v) => handleFormChange('companyName', v)} disabled />
+          <TofuInput label="客戶編號" value={form.clientId || ''} onChange={(v) => handleFormChange('clientId', v)} placeholder="輸入後自動帶入公司名" required />
+          <TofuInput label="公司行號名稱" value={form.companyName || ''} readOnly placeholder="自動匹配中..." />
           <TofuSelect label="承辦" value={form.handler || ''} onChange={(v) => handleFormChange('handler', v)} options={handlerOptions} />
-          <TofuInput label="收費月份" value={form.billingMonth || ''} onChange={(v) => handleFormChange('billingMonth', v)} placeholder="如：2026/01" />
+          <TofuInput label="收費月份" value={form.billingMonth || ''} onChange={(v) => handleFormChange('billingMonth', v)} placeholder="如：2026/04" />
           <TofuInput label="收費金額" value={form.amount || ''} onChange={(v) => handleFormChange('amount', v)} type="number" />
-          <TofuInput label="待收款" value={form.unpaid || ''} onChange={(v) => handleFormChange('unpaid', v)} type="number" />
           <TofuInput label="已收款" value={form.paid || ''} onChange={(v) => handleFormChange('paid', v)} type="number" />
+          <TofuInput label="待收款" value={form.unpaid || ''} onChange={(v) => handleFormChange('unpaid', v)} type="number" />
           <TofuInput label="收款日期" value={form.paymentDate || ''} onChange={(v) => handleFormChange('paymentDate', v)} type="date" />
-          <TofuInput label="銀行帳戶" value={form.bankAccount || ''} onChange={(v) => handleFormChange('bankAccount', v)} />
+          <div className="full-width">
+            <TofuInput label="銀行帳戶 / 備註" value={form.bankAccount || ''} onChange={(v) => handleFormChange('bankAccount', v)} type="textarea" />
+          </div>
         </div>
       </TofuModal>
 
