@@ -99,9 +99,7 @@ export default function TaskManagement() {
       return false;
     };
 
-    if (activeTab === 'all') return tasks;
-
-    return tasks.filter((t) => {
+    const filteredData = tasks.filter((t) => {
       const status = t.status || '';
       const isReviewing = checkIsReviewing(t);
       const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(status);
@@ -113,7 +111,11 @@ export default function TaskManagement() {
       if (activeTab === '待處理') return !hasFinished && !isOverdue;
       return status === activeTab;
     });
+
+    return { filteredTasks: filteredData, checkIsReviewing };
   }, [tasks, activeTab]);
+
+  const { filteredTasks, checkIsReviewing } = filtered;
 
   const tabsWithCounts = useMemo(() => {
     const now = new Date();
@@ -263,7 +265,11 @@ export default function TaskManagement() {
       key: 'status',
       label: '狀態',
       width: '90px',
-      render: (v) => <TofuBadge color={TASK_STATUS_COLORS[v] || 'yellow'}>{v}</TofuBadge>,
+      render: (v, row) => {
+        const isReviewing = checkIsReviewing(row);
+        const displayStatus = isReviewing ? '待審核' : v;
+        return <TofuBadge color={TASK_STATUS_COLORS[displayStatus] || 'yellow'}>{displayStatus}</TofuBadge>;
+      },
     },
   ];
 

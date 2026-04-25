@@ -56,13 +56,17 @@ export const TASK_STATUS_COLORS = {
 };
 
 export const CLIENT_STATUS = {
-  ACTIVE: '在辦中',
-  INACTIVE: '已結束',
+  ACTIVE: '營業中',
+  SUSPENDED: '停業',
+  CLOSED: '歇業',
+  TRANSFERRED: '轉出',
 };
 
 export const CLIENT_STATUS_COLORS = {
-  '在辦中': 'green',
-  '已結束': 'gray',
+  '營業中': 'green',
+  '停業': 'orange',
+  '歇業': 'red',
+  '轉出': 'gray',
 };
 
 export const ROLES = {
