@@ -33,6 +33,11 @@ export default function BillingData() {
   const [importOpen, setImportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
 
+  // 篩選器狀態
+  const [filterStartMonth, setFilterStartMonth] = useState('');
+  const [filterEndMonth, setFilterEndMonth] = useState('');
+  const [filterEmployee, setFilterEmployee] = useState('');
+
   // 年月份選單選項
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => ({ value: String(currentYear - 2 + i), label: String(currentYear - 2 + i) }));
@@ -41,6 +46,27 @@ export default function BillingData() {
   const [selYear, setSelYear] = useState(String(currentYear));
   const [selMonth, setSelMonth] = useState(String(new Date().getMonth() + 1).padStart(2, '0'));
 
+  // 基本篩選後的資料
+  const displayData = useMemo(() => {
+    let list = data || [];
+    
+    if (filterStartMonth || filterEndMonth) {
+      list = list.filter(row => {
+        if (!row.billingMonth) return false;
+        const bm = String(row.billingMonth).replace(/\//g, '-');
+        const fm = bm.length >= 7 ? bm.substring(0, 7) : bm;
+        if (filterStartMonth && fm < filterStartMonth) return false;
+        if (filterEndMonth && fm > filterEndMonth) return false;
+        return true;
+      });
+    }
+
+    if (filterEmployee) {
+      list = list.filter(row => row.handler === filterEmployee);
+    }
+    return list;
+  }, [data, filterStartMonth, filterEndMonth, filterEmployee]);
+
   // 收款統計
   const stats = useMemo(() => {
     const byHandler = {};
@@ -48,7 +74,7 @@ export default function BillingData() {
     let totalPaid = 0;
     let totalUnpaid = 0;
 
-    (data || []).forEach((row) => {
+    displayData.forEach((row) => {
       const amount = Number(row.amount) || 0;
       const paid = Number(row.paid) || 0;
       const unpaid = Number(row.unpaid) || 0;
@@ -65,16 +91,16 @@ export default function BillingData() {
     });
 
     return { totalAmount, totalPaid, totalUnpaid, byHandler };
-  }, [data]);
+  }, [displayData]);
 
-  const unpaidList = useMemo(() => (data || []).filter((r) => Number(r.unpaid) > 0), [data]);
+  const unpaidList = useMemo(() => displayData.filter((r) => Number(r.unpaid) > 0), [displayData]);
 
   const filteredData = useMemo(() => {
-    if (activeTab === 'all') return data;
+    if (activeTab === 'all') return displayData;
     if (activeTab === 'unpaid') return unpaidList;
-    if (activeTab === 'paid') return data.filter((r) => Number(r.unpaid) === 0 && Number(r.paid) > 0);
-    return data;
-  }, [data, activeTab, unpaidList]);
+    if (activeTab === 'paid') return displayData.filter((r) => Number(r.unpaid) === 0 && Number(r.paid) > 0);
+    return displayData;
+  }, [displayData, activeTab, unpaidList]);
 
   const handleOpen = (item = null) => {
     setEditing(item);
@@ -236,14 +262,43 @@ export default function BillingData() {
         </div>
       )}
 
-      <div className="billing-toolbar">
+      <div className="billing-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <TofuButton onClick={() => handleOpen()} icon="➕">新增收費紀錄</TofuButton>
-          <span style={{ fontSize: '10px', color: '#ccc' }}>v1.2 (含自動計算)</span>
         </div>
-        {isAdmin && (
-          <TofuButton variant="secondary" onClick={() => setImportOpen(true)} icon="📥">Excel 匯入</TofuButton>
-        )}
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f5f5f5', padding: '8px 12px', borderRadius: '8px' }}>
+          <span style={{ fontSize: '14px', fontWeight: 600 }}>查詢區間:</span>
+          <input 
+            type="month" 
+            value={filterStartMonth} 
+            onChange={(e) => setFilterStartMonth(e.target.value)} 
+            style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+          />
+          <span>~</span>
+          <input 
+            type="month" 
+            value={filterEndMonth} 
+            onChange={(e) => setFilterEndMonth(e.target.value)} 
+            style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+          />
+          
+          <span style={{ fontSize: '14px', fontWeight: 600, marginLeft: '8px' }}>員工:</span>
+          <select 
+            value={filterEmployee} 
+            onChange={(e) => setFilterEmployee(e.target.value)}
+            style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+          >
+            <option value="">全部</option>
+            {handlerOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+        </div>
+
+        <div style={{ marginLeft: 'auto' }}>
+          {isAdmin && (
+            <TofuButton variant="secondary" onClick={() => setImportOpen(true)} icon="📥">Excel 匯入</TofuButton>
+          )}
+        </div>
       </div>
 
       <TofuTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />

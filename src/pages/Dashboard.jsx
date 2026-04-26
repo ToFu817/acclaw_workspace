@@ -19,23 +19,22 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 日期區間預設為本月
-  const [startDate, setStartDate] = useState(() => {
+  const [startMonth, setStartMonth] = useState(() => {
     const d = new Date();
     d.setDate(1);
-    return d.toISOString().split('T')[0];
+    return d.toISOString().substring(0, 7);
   });
-  const [endDate, setEndDate] = useState(() => {
+  const [endMonth, setEndMonth] = useState(() => {
     const d = new Date();
     d.setMonth(d.getMonth() + 1);
     d.setDate(0);
-    return d.toISOString().split('T')[0];
+    return d.toISOString().substring(0, 7);
   });
 
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const result = await getDashboardStats({ startDate, endDate });
+      const result = await getDashboardStats({ startMonth, endMonth });
       if (result.status === 'success') setStats(result.data);
     } finally {
       setLoading(false);
@@ -44,7 +43,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchStats();
-  }, [startDate, endDate]);
+  }, [startMonth, endMonth]);
 
   if (loading) {
     return (
@@ -117,16 +116,16 @@ export default function Dashboard() {
             <div className="summary-card__body">
               <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
                 <input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
+                  type="month" 
+                  value={startMonth} 
+                  onChange={(e) => setStartMonth(e.target.value)} 
                   style={{ flex: 1, padding: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
                 />
                 <span style={{ alignSelf: 'center' }}>-</span>
                 <input 
-                  type="date" 
-                  value={endDate} 
-                  onChange={(e) => setEndDate(e.target.value)} 
+                  type="month" 
+                  value={endMonth} 
+                  onChange={(e) => setEndMonth(e.target.value)} 
                   style={{ flex: 1, padding: '4px', borderRadius: '4px', border: '1px solid #ccc' }}
                 />
               </div>
