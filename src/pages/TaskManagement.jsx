@@ -78,83 +78,20 @@ export default function TaskManagement() {
     }
   }, [form.clientId, clientMap]);
 
-  const filtered = useMemo(() => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const todayStr = formatDate(now, 'yyyy/MM/dd');
-    const todayMidnight = new Date().setHours(0,0,0,0);
-
-    const checkIsReviewing = (t) => {
-      if (t.status === TASK_STATUS.REVIEWING) return true;
-      if (t.status === '已完成') {
-        if (!t.completedDate) return false;
-        const compDate = new Date(t.completedDate);
-        if (isNaN(compDate.getTime())) return false;
-
-        // 轉成日期字串比較 (避免時間干擾)
-        const compDateStr = compDate.getFullYear() + '/' + (compDate.getMonth() + 1).toString().padStart(2, '0') + '/' + compDate.getDate().toString().padStart(2, '0');
-        
-        if (compDateStr < todayStr) return true;
-        if (compDateStr === todayStr && currentHour >= 22) return true;
-      }
-      return false;
-    };
-
-    const checkIsDelayed = (t) => {
-      const status = t.status || '';
-      const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(status);
-      const isOverdue = t.dueDate && new Date(t.dueDate) < todayMidnight;
-      return !hasFinished && (status === '延遲中' || isOverdue);
-    };
-
-    const filteredData = tasks.filter((t) => {
-      const isReviewing = checkIsReviewing(t);
-      const isDelayed = checkIsDelayed(t);
-      const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(t.status || '');
-
-      if (activeTab === 'all') return t.status !== '已審核';
-      if (activeTab === TASK_STATUS.REVIEWING) return isReviewing;
-      if (activeTab === '已完成') return t.status === '已完成' && !isReviewing;
-      if (activeTab === '延遲中') return isDelayed;
-      if (activeTab === '待處理') return !hasFinished && !isDelayed && !isReviewing;
-      return t.status === activeTab;
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      const status = t.status || '待處理';
+      if (activeTab === 'all') return status !== '已審核';
+      return status === activeTab;
     });
-
-    return { filteredTasks: filteredData, checkIsReviewing, checkIsDelayed };
   }, [tasks, activeTab]);
 
-  const { filteredTasks, checkIsReviewing, checkIsDelayed } = filtered;
-
   const tabsWithCounts = useMemo(() => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const todayStr = formatDate(now, 'yyyy/MM/dd');
-    const todayMidnight = new Date().setHours(0,0,0,0);
-
-    const checkIsReviewing = (t) => {
-      if (t.status === TASK_STATUS.REVIEWING) return true;
-      if (t.status === '已完成') {
-        const compDate = t.completedDate ? formatDate(t.completedDate, 'yyyy/MM/dd') : '';
-        if (compDate && compDate < todayStr) return true;
-        if (compDate === todayStr && currentHour >= 22) return true;
-      }
-      return false;
-    };
-
     return statusTabs.map((tab) => ({
       ...tab,
       count: tasks.filter((t) => {
-        const isReviewing = checkIsReviewing(t);
-        const status = t.status || '';
-        const hasFinished = t.completedDate || ['已完成', '待審核', '已審核'].includes(status);
-        const isOverdue = t.dueDate && new Date(t.dueDate) < todayMidnight;
-        const isDelayed = !hasFinished && (status === '延遲中' || isOverdue);
-
+        const status = t.status || '待處理';
         if (tab.key === 'all') return status !== '已審核';
-        if (tab.key === TASK_STATUS.REVIEWING) return isReviewing;
-        if (tab.key === '已完成') return status === '已完成' && !isReviewing;
-        if (tab.key === '延遲中') return isDelayed;
-        if (tab.key === '待處理') return !hasFinished && !isDelayed && !isReviewing;
         return status === tab.key;
       }).length,
     }));
@@ -327,11 +264,8 @@ export default function TaskManagement() {
       label: '狀態',
       width: '90px',
       render: (v, row) => {
-        const isReviewing = checkIsReviewing(row);
-        const isDelayed = checkIsDelayed(row);
-        let displayStatus = v;
-        if (isReviewing) displayStatus = '待審核';
-        else if (isDelayed) displayStatus = '延遲中';
+        const displayStatus = v || '待處理';
+        const isDelayed = displayStatus === '延遲中';
 
         return (
           <div className={isDelayed ? 'delayed-highlight' : ''}>

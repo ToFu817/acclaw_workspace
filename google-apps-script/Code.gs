@@ -150,9 +150,26 @@ function handleGetData(p) {
   return { status: 'success', data: getSheetData(sheet) };
 }
 
+function processTaskStatus(rowData) {
+  const status = rowData.status || '';
+  if (status === '已完成' || status === '待審核' || status === '已審核') return;
+  if (rowData.dueDate) {
+    const todayStr = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd');
+    const dueStr = Utilities.formatDate(new Date(rowData.dueDate), 'Asia/Taipei', 'yyyy-MM-dd');
+    if (dueStr < todayStr) {
+      rowData.status = '延遲中';
+    } else if (status === '延遲中') {
+      rowData.status = '待處理';
+    }
+  }
+}
+
 function handleAddRow(p) {
   const sheet = getSheet(p.sheetName);
   const hs = getHeaders(sheet);
+  
+  if (p.sheetName === '工作任務') processTaskStatus(p.rowData);
+
   sheet.appendRow(mapDataToRow(hs, p.rowData));
   if (p.sheetName === '客戶資料') syncToAllocation(p.rowData);
   return { status: 'success' };
@@ -161,6 +178,9 @@ function handleAddRow(p) {
 function handleUpdateRow(p) {
   const sheet = getSheet(p.sheetName);
   const hs = getHeaders(sheet);
+  
+  if (p.sheetName === '工作任務') processTaskStatus(p.rowData);
+
   sheet.getRange(p.rowIndex, 1, 1, hs.length).setValues([mapDataToRow(hs, p.rowData)]);
   if (p.sheetName === '客戶資料') syncToAllocation(p.rowData);
   return { status: 'success' };
