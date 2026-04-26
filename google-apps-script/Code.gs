@@ -17,7 +17,7 @@ const FIELD_MAP = {
   'note': '備註', 'taxPassword': '稅務申報密碼', 'healthInsCode': '健保投保代號', 'unallocated': '待分配',
   // 工作任務
   'taskId': '任務編號', 'taskItem': '任務項目', 'dueDate': '預計完成日', 'completedDate': '實際完成日',
-  'sopSteps': 'SOP步驟', 'reviewer': '審核人', 'reviewDate': '審核時間',
+  'status': '狀態', 'sopSteps': 'SOP步驟', 'reviewer': '審核人', 'reviewDate': '審核時間',
   // 任務項目
   'itemCode': '項目編號', 'itemName': '項目名稱', 'category': '類別',
   // SOP
@@ -180,11 +180,14 @@ function handleLogin(p) {
 function handleCompleteTask(p) {
   const sheet = getSheet('工作任務');
   const hs = getHeaders(sheet);
-  const task = getSheetData(sheet).find(t => String(t.taskId) === String(p.taskId));
+  const data = getSheetData(sheet);
+  const task = data.find(t => String(t.taskId) === String(p.taskId));
   if (!task) return { status: 'error', message: '找不到任務' };
+  
   const now = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy/MM/dd');
-  const up = { ...task, status: '已完成', completedDate: now };
-  sheet.getRange(task.rowIndex, 1, 1, hs.length).setValues([mapDataToRow(hs, up)]);
+  const updatedTask = { ...task, status: '已完成', completedDate: now };
+  
+  sheet.getRange(task.rowIndex, 1, 1, hs.length).setValues([mapDataToRow(hs, updatedTask)]);
   return { status: 'success' };
 }
 
