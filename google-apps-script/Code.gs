@@ -39,12 +39,27 @@ function onEdit(e) {
   
   if (sheetName === '客戶資料') {
     const row = range.getRow();
-    if (row < 2) return; // 標題列不處理
+    if (row < 2) return;
     
     const hs = getHeaders(sheet);
     const rowData = getSheetData(sheet).find(d => d.rowIndex === row);
     if (rowData) {
       syncToAllocation(rowData);
+    }
+  }
+  
+  if (sheetName === '工作任務') {
+    const row = range.getRow();
+    if (row < 2) return;
+    const hs = getHeaders(sheet);
+    const rowData = getSheetData(sheet).find(d => d.rowIndex === row);
+    
+    if (rowData) {
+      const originalStatus = rowData.status;
+      processTaskStatus(rowData);
+      if (originalStatus !== rowData.status) {
+        sheet.getRange(row, 1, 1, hs.length).setValues([mapDataToRow(hs, rowData)]);
+      }
     }
   }
 }
@@ -153,10 +168,27 @@ function handleGetData(p) {
 function processTaskStatus(rowData) {
   const status = rowData.status || '';
   if (status === '已完成' || status === '待審核' || status === '已審核') return;
+  
   if (rowData.dueDate) {
-    const todayStr = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd');
-    const dueStr = Utilities.formatDate(new Date(rowData.dueDate), 'Asia/Taipei', 'yyyy-MM-dd');
-    if (dueStr < todayStr) {
+    const today = new Date();
+    // 轉化為台灣時區的 YYYY-MM-DD
+    const todayStr = Utilities.formatDate(today, 'Asia/Taipei', 'yyyy-MM-dd');
+    
+    // 嘗試解析傳入的 dueDate
+    let dueStr = '';
+    try {
+      const d = new Date(rowData.dueDate);
+      if (!isNaN(d.getTime())) {
+        dueStr = Utilities.formatDate(d, 'Asia/Taipei', 'yyyy-MM-dd');
+      } else {
+        // 如果傳入的就是純文字的 YYYY-MM-DD，直接使用
+        dueStr = String(rowData.dueDate).trim().substring(0, 10).replace(/\//g, '-');
+      }
+    } catch (e) {
+      dueStr = String(rowData.dueDate).trim().substring(0, 10).replace(/\//g, '-');
+    }
+
+    if (dueStr && dueStr < todayStr) {
       rowData.status = '延遲中';
     } else if (status === '延遲中') {
       rowData.status = '待處理';
