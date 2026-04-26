@@ -25,7 +25,11 @@ export function inputFormatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '';
-  return d.toISOString().split('T')[0];
+  // 使用本地時間提取，避免 toISOString() 導致的時區偏移問題 (UTC+8 會少一天)
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /**
