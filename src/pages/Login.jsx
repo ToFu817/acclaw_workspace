@@ -116,6 +116,18 @@ export default function Login() {
 
         <div className="login-card__hint">
           <p>請輸入您的員工帳號與密碼</p>
+          <div style={{ 
+            marginTop: '12px', 
+            padding: '4px 8px', 
+            borderRadius: '4px', 
+            fontSize: '11px',
+            display: 'inline-block',
+            backgroundColor: import.meta.env.VITE_GAS_URL ? '#e6fffa' : '#fffaf0',
+            color: import.meta.env.VITE_GAS_URL ? '#2c7a7b' : '#9c4221',
+            border: `1px solid ${import.meta.env.VITE_GAS_URL ? '#b2f5ea' : '#feebc8'}`
+          }}>
+            連線狀態：{import.meta.env.VITE_GAS_URL ? '🟢 正式連線模式' : '🟡 模擬測試模式 (請設定 Secret)'}
+          </div>
         </div>
       </motion.div>
     </div>
