@@ -284,6 +284,7 @@ export default function TaskManagement() {
     { key: 'handler', label: '承辦', width: '80px' },
     { key: 'dueDate', label: '預計完成', width: '100px', render: (v) => formatDate(v) },
     { key: 'completedDate', label: '實際完成', width: '100px', render: (v) => formatDate(v) },
+    { key: 'reviewDate', label: '審核時間', width: '100px', render: (v) => formatDate(v) },
     {
       key: 'complete',
       label: '完成',

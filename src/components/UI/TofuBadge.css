@@ -2,18 +2,21 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
-  border-radius: var(--radius-full);
+  border-radius: 6px; /* 統一的圓角框框 */
   font-weight: 700;
   font-size: var(--font-size-xs);
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
 .tofu-badge--sm { padding: 2px 8px; font-size: 0.65rem; }
 .tofu-badge--lg { padding: 6px 16px; font-size: var(--font-size-sm); }
 
-.tofu-badge--yellow { background: var(--color-pending); color: #7A6520; }
-.tofu-badge--pink { background: var(--color-delayed); color: #8B3A3A; }
-.tofu-badge--green { background: var(--color-completed); color: #3A6B3A; }
-.tofu-badge--blue { background: var(--color-reviewing); color: #2A5A8A; }
-.tofu-badge--purple { background: var(--color-reviewed); color: #5A3A8A; }
-.tofu-badge--orange { background: var(--color-orange); color: #8A5A2A; }
+/* 顏色定義 */
+.tofu-badge--yellow { background: #fffbe6; color: #d48806; border-color: #ffe58f; } /* 待處理黃色 */
+.tofu-badge--red { background: #fff1f0; color: #cf1322; border-color: #ffa39e; }    /* 延遲中紅色 */
+.tofu-badge--green { background: #f6ffed; color: #389e0d; border-color: #b7eb8f; }   /* 已完成綠色 */
+.tofu-badge--purple { background: #f9f0ff; color: #531dab; border-color: #d3adf7; }  /* 待審核紫色 */
+.tofu-badge--blue { background: #e6f7ff; color: #096dd9; border-color: #91d5ff; }    /* 已審核藍色 */
+.tofu-badge--orange { background: #fff2e8; color: #d4380d; border-color: #ffbb96; }
+

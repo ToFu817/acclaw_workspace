@@ -274,6 +274,42 @@ function seedAnnualSchedule() {
   return { status: 'success' };
 }
 
+function autoUpdateToReviewing() {
+  const sheet = getSheet('工作任務');
+  if (!sheet) return;
+  const hs = getHeaders(sheet);
+  const data = getSheetData(sheet);
+  
+  const now = new Date();
+  const todayStr = Utilities.formatDate(now, 'Asia/Taipei', 'yyyy/MM/dd');
+  
+  data.forEach(row => {
+    if (row.status === '已完成') {
+      const compDate = row.completedDate ? Utilities.formatDate(new Date(row.completedDate), 'Asia/Taipei', 'yyyy/MM/dd') : '';
+      if (compDate && compDate <= todayStr) {
+        row.status = '待審核';
+        sheet.getRange(row.rowIndex, 1, 1, hs.length).setValues([mapDataToRow(hs, row)]);
+      }
+    }
+  });
+}
+
+function installTriggers() {
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'autoUpdateToReviewing') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  ScriptApp.newTrigger('autoUpdateToReviewing')
+    .timeBased()
+    .atHour(22)
+    .nearMinute(0)
+    .everyDays(1)
+    .inTimezone("Asia/Taipei")
+    .create();
+}
+
 function res(obj) { 
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); 
 }

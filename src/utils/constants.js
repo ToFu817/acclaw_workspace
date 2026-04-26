@@ -50,11 +50,11 @@ export const TASK_STATUS = {
 };
 
 export const TASK_STATUS_COLORS = {
-  '待處理': 'blue',
+  '待處理': 'yellow',
   '延遲中': 'red',
   '已完成': 'green',
   '待審核': 'purple',
-  '已審核': 'gray',
+  '已審核': 'blue',
 };
 
 export const CLIENT_STATUS = {
