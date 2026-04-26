@@ -15,7 +15,7 @@ import TofuBadge from '../components/UI/TofuBadge';
 import ExcelImport from '../components/UI/ExcelImport';
 import ConfirmDialog from '../components/UI/ConfirmDialog';
 
-const emptyForm = { employeeId: '', employeeName: '', title: '', role: 'user', username: '', password: '' };
+const emptyForm = { employeeId: '', employeeName: '', title: '', role: '一般使用者', username: '', password: '' };
 
 export default function GroupManagement() {
   const { isAdmin } = useAuth();
@@ -69,11 +69,13 @@ export default function GroupManagement() {
       key: 'role',
       label: '權限',
       width: '100px',
-      render: (v) => (
-        <TofuBadge color={v === ROLES.ADMIN ? 'purple' : 'blue'}>
-          {v === ROLES.ADMIN ? '管理員' : '使用者'}
-        </TofuBadge>
-      ),
+      render: (v) => {
+        let color = 'blue';
+        let label = v;
+        if (v === '管理者') color = 'purple';
+        else if (v === '資深使用者') color = 'orange';
+        return <TofuBadge color={color}>{label}</TofuBadge>;
+      },
     },
     { key: 'username', label: '帳號', width: '100px' },
   ];
@@ -101,7 +103,16 @@ export default function GroupManagement() {
           <TofuInput label="員工編號" value={form.employeeId} onChange={(v) => setForm({ ...form, employeeId: v })} required />
           <TofuInput label="員工姓名" value={form.employeeName} onChange={(v) => setForm({ ...form, employeeName: v })} required />
           <TofuInput label="職稱" value={form.title} onChange={(v) => setForm({ ...form, title: v })} />
-          <TofuSelect label="權限" value={form.role} onChange={(v) => setForm({ ...form, role: v })} options={[{ value: 'admin', label: '管理員' }, { value: 'user', label: '使用者' }]} />
+          <TofuSelect 
+            label="權限" 
+            value={form.role} 
+            onChange={(v) => setForm({ ...form, role: v })} 
+            options={[
+              { value: '管理者', label: '管理者' }, 
+              { value: '資深使用者', label: '資深使用者' }, 
+              { value: '一般使用者', label: '一般使用者' }
+            ]} 
+          />
           <TofuInput label="帳號" value={form.username} onChange={(v) => setForm({ ...form, username: v })} />
           <TofuInput label="密碼" value={form.password} onChange={(v) => setForm({ ...form, password: v })} type="password" placeholder={editing ? '留空則不變更' : ''} />
         </div>

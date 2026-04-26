@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useGasQuery } from '../hooks/useGasQuery';
 import { useGasRpc } from '../hooks/useGasRpc';
+import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/UI/TofuToast';
 import { SHEET_NAMES, CLIENT_STATUS, CLIENT_STATUS_COLORS } from '../utils/constants';
 import TofuTable from '../components/UI/TofuTable';
@@ -23,8 +24,14 @@ const emptyForm = () => ({
 
 export default function ClientData() {
   const toast = useToast();
-  const { data: clients = [], loading, refetch } = useGasQuery(SHEET_NAMES.CLIENTS);
+  const { user, isAdmin, canViewAll } = useAuth();
+  const { data: rawClients = [], loading, refetch } = useGasQuery(SHEET_NAMES.CLIENTS);
   const { add, update, remove, importBatch, loading: mutating } = useGasRpc();
+
+  // 權限過濾：只能看到自己的客戶，除非是管理員或資深使用者
+  const clients = useMemo(() => {
+    return rawClients.filter(c => canViewAll || String(c.handler || '').trim() === String(user?.employeeName || '').trim());
+  }, [rawClients, canViewAll, user]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
@@ -101,8 +108,12 @@ export default function ClientData() {
   return (
     <div className="client-data-page">
       <div className="client-data-page__toolbar">
-        <TofuButton onClick={handleOpenCreate} icon="➕">新增客戶</TofuButton>
-        <TofuButton variant="secondary" onClick={() => setImportOpen(true)} icon="📥">Excel 匯入</TofuButton>
+        {(isAdmin || canViewAll) && (
+          <>
+            <TofuButton onClick={handleOpenCreate} icon="➕">新增客戶</TofuButton>
+            <TofuButton variant="secondary" onClick={() => setImportOpen(true)} icon="📥">Excel 匯入</TofuButton>
+          </>
+        )}
       </div>
 
       <div className="client-data-content">

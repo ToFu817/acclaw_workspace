@@ -42,7 +42,7 @@ const emptyForm = () => ({
 });
 
 export default function TaskManagement() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, canViewAll } = useAuth();
   const toast = useToast();
   const { data: tasks = [], loading, refetch } = useGasQuery(SHEET_NAMES.TASKS);
   const { data: taskItems = [] } = useGasQuery(SHEET_NAMES.TASK_ITEMS);
@@ -78,24 +78,28 @@ export default function TaskManagement() {
     }
   }, [form.clientId, clientMap]);
 
+  const displayTasks = useMemo(() => {
+    return tasks.filter(t => canViewAll || String(t.handler || '').trim() === String(user?.employeeName || '').trim());
+  }, [tasks, canViewAll, user]);
+
   const filteredTasks = useMemo(() => {
-    return tasks.filter((t) => {
+    return displayTasks.filter((t) => {
       const status = t.status || '待處理';
       if (activeTab === 'all') return status !== '已審核';
       return status === activeTab;
     });
-  }, [tasks, activeTab]);
+  }, [displayTasks, activeTab]);
 
   const tabsWithCounts = useMemo(() => {
     return statusTabs.map((tab) => ({
       ...tab,
-      count: tasks.filter((t) => {
+      count: displayTasks.filter((t) => {
         const status = t.status || '待處理';
         if (tab.key === 'all') return status !== '已審核';
         return status === tab.key;
       }).length,
     }));
-  }, [tasks]);
+  }, [displayTasks]);
 
   const handleOpenCreate = () => {
     setEditingTask(null);

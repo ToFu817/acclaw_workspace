@@ -19,6 +19,13 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function AdminRoute({ children }) {
+  const { user, isAdmin } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 function AppRoutes() {
   const { user } = useAuth();
 
@@ -40,9 +47,9 @@ function AppRoutes() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="tasks" element={<TaskManagement />} />
         <Route path="items" element={<TaskItems />} />
-        <Route path="groups" element={<GroupManagement />} />
+        <Route path="groups" element={<AdminRoute><GroupManagement /></AdminRoute>} />
         <Route path="clients" element={<ClientData />} />
-        <Route path="allocation" element={<ClientAllocation />} />
+        <Route path="allocation" element={<AdminRoute><ClientAllocation /></AdminRoute>} />
         <Route path="sop" element={<SOPWorkflow />} />
         <Route path="billing" element={<BillingData />} />
         <Route path="schedule" element={<AnnualSchedule />} />

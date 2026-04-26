@@ -19,7 +19,7 @@ import ConfirmDialog from '../components/UI/ConfirmDialog';
 import './BillingData.css';
 
 export default function BillingData() {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin, canViewAll } = useAuth();
   const toast = useToast();
   const { data = [], loading, refetch } = useGasQuery(SHEET_NAMES.BILLING);
   const { data: clients = [] } = useGasQuery(SHEET_NAMES.CLIENTS);
@@ -48,7 +48,7 @@ export default function BillingData() {
 
   // 基本篩選後的資料
   const displayData = useMemo(() => {
-    let list = data || [];
+    let list = (data || []).filter(r => canViewAll || String(r.handler || '').trim() === String(user?.employeeName || '').trim());
     
     if (filterStartMonth || filterEndMonth) {
       list = list.filter(row => {
@@ -76,7 +76,7 @@ export default function BillingData() {
       list = list.filter(row => row.handler === filterEmployee);
     }
     return list;
-  }, [data, filterStartMonth, filterEndMonth, filterEmployee]);
+  }, [data, filterStartMonth, filterEndMonth, filterEmployee, canViewAll, user]);
 
   // 收款統計
   const stats = useMemo(() => {
@@ -280,9 +280,11 @@ export default function BillingData() {
       )}
 
       <div className="billing-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <TofuButton onClick={() => handleOpen()} icon="➕">新增收費紀錄</TofuButton>
-        </div>
+        {(isAdmin || canViewAll) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <TofuButton onClick={() => handleOpen()} icon="➕">新增收費紀錄</TofuButton>
+          </div>
+        )}
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f5f5f5', padding: '8px 12px', borderRadius: '8px' }}>
           <span style={{ fontSize: '14px', fontWeight: 600 }}>查詢區間:</span>

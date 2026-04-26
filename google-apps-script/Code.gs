@@ -263,8 +263,24 @@ function handleDeleteRow(p) {
 
 function handleLogin(p) {
   const data = getSheetData(getSheet('群組管理'));
-  const user = data.find(u => u.username === p.username && u.password === p.password);
-  return user ? { status: 'success', data: user } : { status: 'error', message: '帳號或密碼錯誤' };
+  const user = data.find(u => String(u.username).trim() === String(p.username).trim() && String(u.password).trim() === String(p.password).trim());
+  if (!user) return { status: 'error', message: '帳號或密碼錯誤' };
+  
+  // 權限對應
+  let role = 'user';
+  const rawRole = String(user.role || '').trim();
+  if (rawRole === '管理者') role = 'admin';
+  else if (rawRole === '資深使用者') role = 'senior';
+  else if (rawRole === '一般使用者') role = 'user';
+  
+  return { 
+    status: 'success', 
+    data: { 
+      employeeId: user.employeeId, 
+      employeeName: user.employeeName, 
+      role: role
+    } 
+  };
 }
 
 function handleCompleteTask(p) {
@@ -339,7 +355,8 @@ function handleGetDashboardStats(p = {}) {
 
   let urgentTasks = [];
   if (p.employeeName) {
-    const myTasks = tasks.filter(t => t.handler === p.employeeName);
+    const targetName = String(p.employeeName).trim();
+    const myTasks = tasks.filter(t => String(t.handler || '').trim() === targetName);
     myTasks.forEach(t => {
       const status = String(t.status || '').trim();
       if (status === '已完成' || status === '已審核' || status === '待審核') return;

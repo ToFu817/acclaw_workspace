@@ -6,8 +6,14 @@ import TofuAvatar from '../UI/TofuAvatar';
 import './Sidebar.css';
 
 export default function Sidebar({ collapsed, onToggle }) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isSenior } = useAuth();
   const location = useLocation();
+
+  const filteredNavItems = NAV_ITEMS.filter(item => {
+    if (item.path === '/allocation') return isAdmin;
+    if (item.path === '/groups') return isAdmin;
+    return true;
+  });
 
   return (
     <motion.aside
@@ -32,7 +38,7 @@ export default function Sidebar({ collapsed, onToggle }) {
       </div>
 
       <nav className="sidebar__nav">
-        {NAV_ITEMS.map((item) => (
+        {filteredNavItems.map((item) => (
           <NavLink
             key={item.key}
             to={item.path}
@@ -60,7 +66,7 @@ export default function Sidebar({ collapsed, onToggle }) {
             <div className="sidebar__user-info">
               <span className="sidebar__user-name">{user?.employeeName}</span>
               <span className="sidebar__user-role">
-                {isAdmin ? '管理員' : '使用者'}
+                {isAdmin ? '管理員' : (isSenior ? '資深使用者' : '使用者')}
               </span>
             </div>
           )}

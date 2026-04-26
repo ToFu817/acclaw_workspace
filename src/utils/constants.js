@@ -73,6 +73,7 @@ export const CLIENT_STATUS_COLORS = {
 
 export const ROLES = {
   ADMIN: 'admin',
+  SENIOR: 'senior',
   USER: 'user',
 };
 
