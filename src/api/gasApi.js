@@ -47,13 +47,7 @@ async function mockResponse(action, params) {
   const mockData = {
     login: async () => {
       await delay(500);
-      if (params.username === 'admin' && params.password === 'admin') {
-        const res = { status: 'success', data: { employeeId: 'EMP001', employeeName: '管理員', role: 'admin' } };
-        console.log('Mock Login Success:', res);
-        return res;
-      }
-      console.log('Mock Login Failed (wrong credentials)');
-      return { status: 'error', message: '帳密錯誤' };
+      return { status: 'error', message: '系統目前處於模擬模式，請設定 GAS URL 以進行正式登入' };
     },
     getData: async () => {
       await delay(300);

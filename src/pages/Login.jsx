@@ -115,8 +115,7 @@ export default function Login() {
         </form>
 
         <div className="login-card__hint">
-          <p>測試帳號：admin / admin (管理員)</p>
-          <p>測試帳號：user / user (一般使用者)</p>
+          <p>請輸入您的員工帳號與密碼</p>
         </div>
       </motion.div>
     </div>
