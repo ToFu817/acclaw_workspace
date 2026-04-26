@@ -59,6 +59,8 @@ export default function TaskManagement() {
   const [importOpen, setImportOpen] = useState(false);
   const [clickingIds, setClickingIds] = useState(new Set());
   const [filterHandler, setFilterHandler] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const clientMap = useMemo(() => {
     const map = new Map();
@@ -99,12 +101,46 @@ export default function TaskManagement() {
   }, [tasks, canViewAll, user, filterHandler]);
 
   const filteredTasks = useMemo(() => {
-    return displayTasks.filter((t) => {
+    let list = displayTasks.filter((t) => {
       const status = t.status || '待處理';
       if (activeTab === 'all') return status !== '已審核';
       return status === activeTab;
     });
-  }, [displayTasks, activeTab]);
+
+    // 日期區間篩選
+    if (startDate || endDate) {
+      list = list.filter(t => {
+        let targetDate = '';
+        if (activeTab === '已審核') targetDate = t.reviewDate;
+        else if (activeTab === '待審核') targetDate = t.completedDate;
+        
+        if (!targetDate) return false;
+        const d = inputFormatDate(targetDate);
+        if (startDate && d < startDate) return false;
+        if (endDate && d > endDate) return false;
+        return true;
+      });
+    }
+
+    // 針對特定分頁進行特殊排序
+    if (activeTab === '已審核') {
+      // 審核日期越新的在上面 (降序)
+      return [...list].sort((a, b) => {
+        const dA = a.reviewDate ? new Date(a.reviewDate).getTime() : 0;
+        const dB = b.reviewDate ? new Date(b.reviewDate).getTime() : 0;
+        return dB - dA;
+      });
+    } else if (activeTab === '待審核') {
+      // 實際完成日期越舊的在上面 (升序)
+      return [...list].sort((a, b) => {
+        const dA = a.completedDate ? new Date(a.completedDate).getTime() : 0;
+        const dB = b.completedDate ? new Date(b.completedDate).getTime() : 0;
+        return dA - dB;
+      });
+    }
+
+    return list;
+  }, [displayTasks, activeTab, startDate, endDate]);
 
   const tabsWithCounts = useMemo(() => {
     return statusTabs.map((tab) => ({
@@ -321,6 +357,32 @@ export default function TaskManagement() {
                 ...handlerOptions
               ]}
             />
+          </div>
+        )}
+
+        {(activeTab === '已審核' || activeTab === '待審核') && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: '#666' }}>
+              {activeTab === '已審核' ? '審核日期：' : '完成日期：'}
+            </span>
+            <TofuInput
+              type="date"
+              value={startDate}
+              onChange={setStartDate}
+              style={{ width: '140px' }}
+            />
+            <span>~</span>
+            <TofuInput
+              type="date"
+              value={endDate}
+              onChange={setEndDate}
+              style={{ width: '140px' }}
+            />
+            {(startDate || endDate) && (
+              <TofuButton size="sm" variant="ghost" onClick={() => { setStartDate(''); setEndDate(''); }}>
+                清除篩選
+              </TofuButton>
+            )}
           </div>
         )}
       </div>
