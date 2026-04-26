@@ -330,14 +330,13 @@ function handleBatchImport(p) {
 
 function handleGetDashboardStats(p = {}) {
   const tasks = getSheetData(getSheet('工作任務'));
-  const isAdmin = p.role === 'admin';
   const targetName = String(p.employeeName || '').trim();
 
-  // 資深使用者與一般使用者僅統計自己的數量，管理員統計全部
-  const statsTasks = isAdmin ? tasks : tasks.filter(t => String(t.handler || '').trim() === targetName);
+  // 按照使用者要求：無論權限，儀表板統計數字只顯示「登入者本人」的案件
+  const myTasks = tasks.filter(t => String(t.handler || '').trim() === targetName);
   
   let stats = { pending: 0, delayed: 0, completed: 0, reviewing: 0, reviewed: 0 };
-  statsTasks.forEach(t => {
+  myTasks.forEach(t => {
     const status = String(t.status || '').trim();
     if (status === '已審核') stats.reviewed++;
     else if (status === '待審核') stats.reviewing++;
@@ -359,39 +358,30 @@ function handleGetDashboardStats(p = {}) {
   const future7dStr = Utilities.formatDate(future7d, 'Asia/Taipei', 'yyyy-MM-dd');
 
   let urgentTasks = [];
-  if (p.employeeName) {
-    const targetName = String(p.employeeName).trim();
-    const myTasks = tasks.filter(t => String(t.handler || '').trim() === targetName);
-    myTasks.forEach(t => {
-      const status = String(t.status || '').trim();
-      if (status === '已完成' || status === '已審核' || status === '待審核') return;
+  myTasks.forEach(t => {
+    const status = String(t.status || '').trim();
+    if (status === '已完成' || status === '已審核' || status === '待審核') return;
 
-      let dDate = '';
-      if (Object.prototype.toString.call(t.dueDate) === '[object Date]' && !isNaN(t.dueDate.getTime())) {
-        dDate = Utilities.formatDate(t.dueDate, 'Asia/Taipei', 'yyyy-MM-dd');
-      } else if (t.dueDate) {
-        let str = String(t.dueDate).trim();
-        if (str.includes('T')) {
-          const d = new Date(str);
-          if (!isNaN(d.getTime())) dDate = Utilities.formatDate(d, 'Asia/Taipei', 'yyyy-MM-dd');
-        } else {
-          dDate = str.substring(0, 10).replace(/\//g, '-');
-        }
-      }
+    let dDate = '';
+    if (Object.prototype.toString.call(t.dueDate) === '[object Date]' && !isNaN(t.dueDate.getTime())) {
+      dDate = Utilities.formatDate(t.dueDate, 'Asia/Taipei', 'yyyy-MM-dd');
+    } else if (t.dueDate) {
+      let str = String(t.dueDate).trim();
+      dDate = str.substring(0, 10).replace(/\//g, '-');
+    }
 
-      if (status === '延遲中') {
-        urgentTasks.push({ ...t, dueDate: dDate });
-      } else if (status === '待處理' && dDate && dDate <= future7dStr) {
-        urgentTasks.push({ ...t, dueDate: dDate });
-      }
-    });
+    if (status === '延遲中') {
+      urgentTasks.push({ ...t, dueDate: dDate });
+    } else if (status === '待處理' && dDate && dDate <= future7dStr) {
+      urgentTasks.push({ ...t, dueDate: dDate });
+    }
+  });
 
-    urgentTasks.sort((a, b) => {
-      if (a.status === '延遲中' && b.status !== '延遲中') return -1;
-      if (a.status !== '延遲中' && b.status === '延遲中') return 1;
-      return (a.dueDate || '') > (b.dueDate || '') ? 1 : -1;
-    });
-  }
+  urgentTasks.sort((a, b) => {
+    if (a.status === '延遲中' && b.status !== '延遲中') return -1;
+    if (a.status !== '延遲中' && b.status === '延遲中') return 1;
+    return (a.dueDate || '') > (b.dueDate || '') ? 1 : -1;
+  });
 
   return { 
     status: 'success', 
@@ -401,7 +391,7 @@ function handleGetDashboardStats(p = {}) {
       unassignedClients,
       monthlyGoals: thisMonthAnnual,
       urgentTasks
-    }
+    } 
   };
 }
 
