@@ -144,7 +144,7 @@ function doPost(e) {
       case 'batchImport': return res(handleBatchImport(p));
       case 'completeTask': return res(handleCompleteTask(p));
       case 'reviewTask': return res(handleReviewTask(p));
-      case 'getDashboardStats': return res(handleGetDashboardStats());
+      case 'getDashboardStats': return res(handleGetDashboardStats(p));
       case 'initAnnual': return res(seedAnnualSchedule());
       default: return res({ status: 'error', message: '未知動作' });
     }

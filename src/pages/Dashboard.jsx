@@ -103,14 +103,19 @@ export default function Dashboard() {
             <h3>我的緊急任務</h3>
           </div>
           <div className="summary-card__body">
-            <div className="monthly-goals">
+            <div className="monthly-goals" style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: '4px' }}>
               {(stats?.urgentTasks || []).map((task, i) => (
-                <div key={i} className="monthly-goal-item">
+                <div key={i} className="monthly-goal-item" style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: '8px' }}>
                   <span className="goal-bullet" style={{ color: task.status === '延遲中' ? '#e74c3c' : '#f39c12' }}>•</span>
-                  <div style={{ flex: 1 }}>
-                    <div className="goal-text">{task.taskItem} <span style={{ fontSize: '11px', color: '#888', marginLeft: '6px' }}>{task.companyName}</span></div>
-                    <div style={{ fontSize: '12px', color: task.status === '延遲中' ? '#e74c3c' : '#666' }}>
-                      {task.status === '延遲中' ? `已延遲 (期限: ${task.dueDate})` : `即將到期 (${task.dueDate})`}
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div className="goal-text" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '500' }}>
+                      {task.taskItem}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      🏢 {task.companyName}
+                    </div>
+                    <div style={{ fontSize: '11px', color: task.status === '延遲中' ? '#e74c3c' : '#888', marginTop: '2px' }}>
+                      {task.status === '延遲中' ? `❌ 已延遲 (${task.dueDate})` : `⏳ 期限: ${task.dueDate}`}
                     </div>
                   </div>
                 </div>
