@@ -35,8 +35,9 @@ export default function ClientAllocation() {
     const groups = {};
     (employees || []).forEach((emp) => {
       if (emp && emp.employeeName) {
-        groups[emp.employeeName.trim()] = { 
-          '營業中': [], '停業': [], '歇業': [], '轉出': [], '其他': []
+        const name = emp.employeeName.trim();
+        groups[name] = { 
+          '營業中': {}, '停業': {}, '歇業': {}, '轉出': {}, '其他': {}
         };
       }
     });
@@ -46,8 +47,13 @@ export default function ClientAllocation() {
       if (handlerName && groups[handlerName]) {
         const status = (c.status || '').trim();
         const groupKey = ['營業中', '停業', '歇業', '轉出'].includes(status) ? status : '其他';
-        groups[handlerName][groupKey].push(c);
-        groups[handlerName][groupKey].sort((a, b) => String(a.clientId).localeCompare(String(b.clientId), undefined, { numeric: true }));
+        const orgType = (c.orgType || '未分類').trim();
+        
+        if (!groups[handlerName][groupKey][orgType]) {
+          groups[handlerName][groupKey][orgType] = [];
+        }
+        groups[handlerName][groupKey][orgType].push(c);
+        groups[handlerName][groupKey][orgType].sort((a, b) => String(a.clientId).localeCompare(String(b.clientId), undefined, { numeric: true }));
       }
     });
     return groups;
@@ -123,25 +129,31 @@ export default function ClientAllocation() {
                   </div>
                 </div>
                 <div className="alloc-handler-clients">
-                  {Object.entries(group || {}).map(([status, groupClients]) => (
-                    (groupClients?.length || 0) > 0 && (
+                  {Object.entries(group || {}).map(([status, orgGroups]) => {
+                    const statusCount = Object.values(orgGroups).reduce((sum, list) => sum + list.length, 0);
+                    return statusCount > 0 && (
                       <div key={status} className="alloc-status-group">
-                        <div className="alloc-status-label">{status}</div>
-                        {groupClients.map((c) => (
-                          <div key={c.clientId} className="alloc-handler-client-row">
-                            <div className="alloc-handler-client-info">
-                              <span className="alloc-client-id">[{c.clientId}]</span>
-                              <span>{c.companyName}</span>
-                            </div>
-                            <div className="alloc-client-actions">
-                              <TofuButton size="xs" variant="ghost" onClick={() => { setSelectedClient(c); setSelectedHandler(c.handler); setAssignModal(true); }}>更改</TofuButton>
-                              <TofuButton size="xs" variant="danger" onClick={() => setDeleteTarget(c)}>移除</TofuButton>
-                            </div>
+                        <div className="alloc-status-label">{status} ({statusCount})</div>
+                        {Object.entries(orgGroups).map(([orgType, groupClients]) => (
+                          <div key={orgType} className="alloc-org-subgroup">
+                            <div className="alloc-org-label">{orgType}</div>
+                            {groupClients.map((c) => (
+                              <div key={c.clientId} className="alloc-handler-client-row">
+                                <div className="alloc-handler-client-info">
+                                  <span className="alloc-client-id">[{c.clientId}]</span>
+                                  <span>{c.companyName}</span>
+                                </div>
+                                <div className="alloc-client-actions">
+                                  <TofuButton size="xs" variant="ghost" onClick={() => { setSelectedClient(c); setSelectedHandler(c.handler); setAssignModal(true); }}>更改</TofuButton>
+                                  <TofuButton size="xs" variant="danger" onClick={() => setDeleteTarget(c)}>移除</TofuButton>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         ))}
                       </div>
-                    )
-                  ))}
+                    );
+                  })}
                 </div>
               </TofuCard>
             ))}

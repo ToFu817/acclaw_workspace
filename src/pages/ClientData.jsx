@@ -170,7 +170,7 @@ export default function ClientData() {
                 <p className="detail-note">{drawerClient.note || '無備註'}</p>
               </div>
               <div className="drawer-footer">
-                <TofuButton size="sm" variant="ghost" onClick={(e) => handleOpenEdit(drawerClient, e)}>編輯資料</TofuButton>
+                <TofuButton size="sm" variant="success" onClick={(e) => handleOpenEdit(drawerClient, e)}>編輯資料</TofuButton>
                 <TofuButton size="sm" variant="danger" onClick={() => setDeleteTarget(drawerClient)}>刪除客戶</TofuButton>
               </div>
             </div>
