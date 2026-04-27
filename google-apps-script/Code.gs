@@ -5,7 +5,7 @@
  */
 
 const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
-const WEB_API_KEY = "TaxToFu-secret-key-817421";
+const WEB_API_KEY = PropertiesService.getScriptProperties().getProperty('API_KEY');
 
 const FIELD_MAP = {
   // 群組管理
