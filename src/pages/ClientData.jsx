@@ -26,6 +26,7 @@ export default function ClientData() {
   const toast = useToast();
   const { user, isAdmin, canViewAll } = useAuth();
   const { data: rawClients = [], loading, refetch } = useGasQuery(SHEET_NAMES.CLIENTS);
+  const { data: employees = [] } = useGasQuery(SHEET_NAMES.GROUPS);
   const { add, update, remove, importBatch, loading: mutating } = useGasRpc();
 
   // 權限過濾：只能看到自己的客戶，除非是管理員或資深使用者
@@ -104,6 +105,8 @@ export default function ClientData() {
     { key: 'taxPassword', label: '稅務密碼', minWidth: '120px' },
     { key: 'healthInsCode', label: '健保代號', minWidth: '120px' },
   ];
+  
+  const handlerOptions = employees.map(e => ({ value: e.employeeName, label: e.employeeName }));
 
   return (
     <div className="client-data-page">
@@ -180,6 +183,7 @@ export default function ClientData() {
           <TofuInput label="客戶編號" value={form.clientId} onChange={(v) => setForm({...form, clientId: v})} required />
           <TofuInput label="公司名稱" value={form.companyName} onChange={(v) => setForm({...form, companyName: v})} required />
           <TofuInput label="統一編號" value={form.taxId} onChange={(v) => setForm({...form, taxId: v})} />
+          <TofuSelect label="承辦人員" value={form.handler} onChange={(v) => setForm({...form, handler: v})} options={handlerOptions} />
           <TofuSelect label="狀態" value={form.status} onChange={(v) => setForm({...form, status: v})} options={Object.values(CLIENT_STATUS)} />
           <TofuInput label="負責人" value={form.owner} onChange={(v) => setForm({...form, owner: v})} />
           <TofuInput label="電話" value={form.companyPhone} onChange={(v) => setForm({...form, companyPhone: v})} />

@@ -72,7 +72,7 @@ export default function AnnualSchedule() {
 
       <div className="annual-grid">
         {groupedData.map(({ month, tasks }) => (
-          <TofuCard key={month} className="month-card" title={MONTH_NAMES[month - 1]}>
+          <TofuCard key={month} className="month-card" title={`${month}月 - ${MONTH_NAMES[month - 1]}`}>
             <div className="month-tasks">
               {tasks.map((task) => (
                 <div key={task.rowIndex} className="month-task-item">

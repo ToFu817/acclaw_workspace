@@ -25,7 +25,8 @@ export default function ClientAllocation() {
 
   // 1. 待分配
   const unassignedClients = useMemo(() =>
-    (clients || []).filter((c) => !c.handler || String(c.handler).trim() === ''),
+    (clients || []).filter((c) => !c.handler || String(c.handler).trim() === '')
+    .sort((a, b) => String(a.clientId).localeCompare(String(b.clientId), undefined, { numeric: true })),
     [clients]
   );
 
@@ -46,6 +47,7 @@ export default function ClientAllocation() {
         const status = (c.status || '').trim();
         const groupKey = ['營業中', '停業', '歇業', '轉出'].includes(status) ? status : '其他';
         groups[handlerName][groupKey].push(c);
+        groups[handlerName][groupKey].sort((a, b) => String(a.clientId).localeCompare(String(b.clientId), undefined, { numeric: true }));
       }
     });
     return groups;

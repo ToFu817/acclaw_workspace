@@ -5,6 +5,7 @@
  */
 
 const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+const WEB_API_KEY = "TaxToFu-secret-key-817421";
 
 const FIELD_MAP = {
   // 群組管理
@@ -133,7 +134,13 @@ function doGet(e) {
 function doPost(e) {
   if (!e || !e.postData || !e.postData.contents) return res({ status: 'error', message: '無效請求' });
   const req = JSON.parse(e.postData.contents);
-  const { action, params: p = {} } = req;
+  const { action, params: p = {}, apiKey } = req;
+  
+  // 安全檢查
+  if (apiKey !== WEB_API_KEY) {
+    return res({ status: 'error', message: '身份驗證失敗：API KEY 錯誤' });
+  }
+
   try {
     switch (action) {
       case 'login': return res(handleLogin(p));
@@ -199,8 +206,23 @@ function mapDataToRow(headers, obj) {
 }
 
 function handleGetData(p) {
-  const sheet = getSheet(p.sheetName);
-  return { status: 'success', data: getSheetData(sheet) };
+  const sheetName = p.sheetName || '';
+  const sheet = getSheet(sheetName);
+  let data = getSheetData(sheet);
+
+  // 資料量優化：如果是任務表且前端有傳入 months 參數
+  if (sheetName === '工作任務' && p.months > 0) {
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - p.months);
+    
+    data = data.filter(row => {
+      if (!row.dueDate && !row.completedDate) return true;
+      const targetDate = new Date(row.completedDate || row.dueDate);
+      return targetDate >= cutoffDate;
+    });
+  }
+
+  return { status: 'success', data: data };
 }
 
 function processTaskStatus(rowData) {

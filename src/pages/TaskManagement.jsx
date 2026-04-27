@@ -44,7 +44,8 @@ const emptyForm = () => ({
 export default function TaskManagement() {
   const { isAdmin, user, canViewAll } = useAuth();
   const toast = useToast();
-  const { data: tasks = [], loading, refetch } = useGasQuery(SHEET_NAMES.TASKS);
+  const [fetchAll, setFetchAll] = useState(false);
+  const { data: tasks = [], loading, refetch } = useGasQuery(SHEET_NAMES.TASKS, { months: fetchAll ? 0 : 3 });
   const { data: taskItems = [] } = useGasQuery(SHEET_NAMES.TASK_ITEMS);
   const { data: clients = [] } = useGasQuery(SHEET_NAMES.CLIENTS);
   const { data: employees = [] } = useGasQuery(SHEET_NAMES.GROUPS);
@@ -310,11 +311,14 @@ export default function TaskManagement() {
         const canReview = isAdmin && (row.status === '已完成' || row.status === '待審核');
         const isClicking = clickingIds.has(row.taskId);
         return (
-          <TofuCheckbox 
-            checked={isReviewDone} 
-            onChange={() => canReview && !isClicking && handleToggleStatus(row, '已審核')}
-            disabled={!canReview || isReviewDone || isClicking}
-          />
+          <div title={!isAdmin ? "資深/一般使用者無審核權限，請洽管理者" : ""}>
+            <TofuCheckbox 
+              checked={isReviewDone} 
+              onChange={() => canReview && !isClicking && handleToggleStatus(row, '已審核')}
+              disabled={!canReview || isReviewDone || isClicking}
+            />
+            {!isAdmin && <div style={{ fontSize: '10px', color: '#999', marginTop: '2px' }}>管理權限</div>}
+          </div>
         );
       },
     },
@@ -345,6 +349,13 @@ export default function TaskManagement() {
       <div className="task-mgmt__toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
         <TofuButton onClick={handleOpenCreate} icon="➕">新增任務</TofuButton>
         <TofuButton variant="secondary" onClick={() => setImportOpen(true)} icon="📥">Excel 匯入</TofuButton>
+        <TofuButton 
+          variant={fetchAll ? "primary" : "outline"} 
+          onClick={() => setFetchAll(!fetchAll)} 
+          icon={fetchAll ? "📂" : "📅"}
+        >
+          {fetchAll ? "顯示最近3個月" : "載入全部資料"}
+        </TofuButton>
         
         {canViewAll && (
           <div style={{ width: '180px' }}>

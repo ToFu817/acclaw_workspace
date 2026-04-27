@@ -1,4 +1,5 @@
 const GAS_URL = import.meta.env.VITE_GAS_URL;
+const API_KEY = import.meta.env.VITE_API_KEY || 'demo-key-123';
 const IS_MOCK = !GAS_URL || GAS_URL.includes('YOUR_DEPLOYMENT_ID');
 
 /**
@@ -14,7 +15,7 @@ export async function callGAS(action, params = {}) {
     const response = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action, params }),
+      body: JSON.stringify({ action, params, apiKey: API_KEY }),
     });
     const result = await response.json();
     console.log('GAS API Response:', result);
@@ -26,10 +27,10 @@ export async function callGAS(action, params = {}) {
 }
 
 /**
- * 導出的快捷方法 (這是解決白畫面的關鍵！)
+ * 導出的快捷方法
  */
 export const login = (params) => callGAS('login', params);
-export const getData = (sheetName) => callGAS('getData', { sheetName });
+export const getData = (sheetName, params = {}) => callGAS('getData', { sheetName, ...params });
 export const addRow = (params) => callGAS('addRow', params);
 export const updateRow = (params) => callGAS('updateRow', params);
 export const deleteRow = (params) => callGAS('deleteRow', params);
