@@ -1,9 +1,29 @@
 .tofu-card {
   background: var(--color-tofu);
   border-radius: var(--radius-lg);
-  padding: var(--space-lg);
   box-shadow: var(--shadow-tofu);
   transition: box-shadow var(--duration-normal) var(--transition-smooth);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tofu-card__header {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.tofu-card__header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.tofu-card__body {
+  padding: var(--space-lg);
+  flex: 1;
 }
 
 .tofu-card--hoverable:hover {
