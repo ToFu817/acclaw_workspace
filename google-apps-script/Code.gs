@@ -5,7 +5,7 @@
  */
 
 const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
-const WEB_API_KEY = PropertiesService.getScriptProperties().getProperty('API_KEY');
+const WEB_API_KEY = PropertiesService.getScriptProperties().getProperty('WEB_API_KEY');
 
 const FIELD_MAP = {
   // 群組管理
