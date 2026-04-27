@@ -1,4 +1,5 @@
 const GAS_URL = import.meta.env.VITE_GAS_URL;
+// API 通訊核心 - 更新於 2026-04-27 23:49
 const API_KEY = import.meta.env.VITE_API_KEY || 'demo-key-123';
 const IS_MOCK = !GAS_URL || GAS_URL.includes('YOUR_DEPLOYMENT_ID');
 
